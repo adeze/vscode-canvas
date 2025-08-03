@@ -72,3 +72,5 @@
 2. Files committed to version control
 3. Other team members can open files in their VS Code
 4. Canvas content displays consistently across team
+
+
