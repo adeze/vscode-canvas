@@ -67,6 +67,7 @@ npm run watch
 - ✅ Visual connection points and preview
 - ✅ File save/load integration
 - ✅ VS Code theme integration
+- ✅ Obsidian canvas format compatibility
 
 ### Canvas Controls
 - **Double-click empty space**: Create new node
@@ -129,24 +130,34 @@ The extension uses webview messaging:
 2. Test basic operations (create, edit, delete, save)
 3. Test with existing canvas files from web app
 4. Verify VS Code integration (save, auto-save, file changes)
+5. Test Obsidian canvas compatibility:
+   - Open `docs/example1.canvas` to verify format loading
+   - Create new canvas and verify format export
 
 ### File Format
-Canvas files are JSON with this structure:
+Canvas files use the Obsidian-compatible format:
 ```json
 {
-  "version": "1.0",
-  "canvas": {
-    "viewport": { "x": 0, "y": 0, "zoom": 1 },
-    "elements": [
-      {
-        "id": "node_1",
-        "type": "text-node",
-        "position": { "x": 100, "y": 100 },
-        "content": "Sample text"
-      }
-    ],
-    "connections": []
-  }
+  "nodes": [
+    {
+      "id": "372acdfee1591a0f",
+      "x": -199,
+      "y": -275,
+      "width": 250,
+      "height": 60,
+      "type": "text",
+      "text": "example1"
+    }
+  ],
+  "edges": [
+    {
+      "id": "7b614e31b0e047ef",
+      "fromNode": "372acdfee1591a0f",
+      "fromSide": "bottom",
+      "toNode": "7393aa1b871cd99a",
+      "toSide": "top"
+    }
+  ]
 }
 ```
 

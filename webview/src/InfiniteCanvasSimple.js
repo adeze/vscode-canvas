@@ -183,63 +183,55 @@ class CanvasState {
     }
     
     exportCanvasData() {
+        // Export in Obsidian-compatible format
         return {
-            version: "1.0",
-            canvas: {
-                viewport: {
-                    x: this.offsetX,
-                    y: this.offsetY,
-                    zoom: this.scale
-                },
-                elements: this.nodes.map(node => ({
-                    id: node.id,
-                    type: 'text-node',
-                    position: { x: node.x, y: node.y },
-                    size: { width: node.width, height: node.height },
-                    content: node.text,
-                    style: {
-                        backgroundColor: node.backgroundColor,
-                        textColor: node.textColor,
-                        borderColor: node.borderColor
-                    }
-                })),
-                connections: this.connections.map(conn => ({
-                    id: conn.id,
-                    from: conn.from,
-                    to: conn.to
-                }))
-            }
+            nodes: this.nodes.map(node => ({
+                id: node.id,
+                x: node.x,
+                y: node.y,
+                width: node.width,
+                height: node.height,
+                type: "text",
+                text: node.text
+            })),
+            edges: this.connections.map(conn => ({
+                id: conn.id,
+                fromNode: conn.from,
+                fromSide: conn.fromSide || "right",
+                toNode: conn.to,
+                toSide: conn.toSide || "left"
+            }))
         };
     }
     
     loadCanvasData(data) {
         try {
-            if (!data || !data.canvas) return;
+            if (!data) return;
             
-            // Load viewport
-            if (data.canvas.viewport) {
-                this.offsetX = data.canvas.viewport.x || 0;
-                this.offsetY = data.canvas.viewport.y || 0;
-                this.scale = data.canvas.viewport.zoom || 1;
-            }
+            // Reset state
+            this.nodes = [];
+            this.connections = [];
+            this.nodeCounter = 0;
+            this.offsetX = 0;
+            this.offsetY = 0;
+            this.scale = 1;
+            
+            console.log('📋 Loading Obsidian canvas format');
             
             // Load nodes
-            this.nodes = [];
-            this.nodeCounter = 0;
-            
-            if (data.canvas.elements) {
-                data.canvas.elements.forEach(element => {
+            if (data.nodes && Array.isArray(data.nodes)) {
+                data.nodes.forEach(nodeData => {
                     const node = {
-                        id: element.id || `node_${++this.nodeCounter}`,
-                        text: element.content || 'New Node',
-                        x: element.position?.x || 100,
-                        y: element.position?.y || 100,
-                        width: element.size?.width || 200,
-                        height: element.size?.height || 100,
+                        id: nodeData.id,
+                        text: nodeData.text || 'New Node',
+                        x: nodeData.x || 100,
+                        y: nodeData.y || 100,
+                        width: nodeData.width || 200,
+                        height: nodeData.height || 100,
                         isSelected: false,
-                        backgroundColor: element.style?.backgroundColor || '#3c3c3c',
-                        textColor: element.style?.textColor || '#cccccc',
-                        borderColor: element.style?.borderColor || '#414141'
+                        backgroundColor: '#3c3c3c',
+                        textColor: '#cccccc',
+                        borderColor: '#414141'
                     };
                     this.nodes.push(node);
                     
@@ -251,18 +243,19 @@ class CanvasState {
                 });
             }
             
-            // Load connections
-            this.connections = [];
-            if (data.canvas.connections) {
-                data.canvas.connections.forEach(connData => {
-                    const fromNode = this.nodes.find(n => n.id === connData.from);
-                    const toNode = this.nodes.find(n => n.id === connData.to);
+            // Load edges
+            if (data.edges && Array.isArray(data.edges)) {
+                data.edges.forEach(edgeData => {
+                    const fromNode = this.nodes.find(n => n.id === edgeData.fromNode);
+                    const toNode = this.nodes.find(n => n.id === edgeData.toNode);
                     
                     if (fromNode && toNode) {
                         this.connections.push({
-                            id: connData.id,
-                            from: connData.from,
-                            to: connData.to,
+                            id: edgeData.id,
+                            from: edgeData.fromNode,
+                            to: edgeData.toNode,
+                            fromSide: edgeData.fromSide,
+                            toSide: edgeData.toSide,
                             fromNode: fromNode,
                             toNode: toNode
                         });
@@ -272,6 +265,7 @@ class CanvasState {
             
             this.clearSelection();
             console.log('✅ Canvas data loaded successfully');
+            console.log('📊 Loaded:', this.nodes.length, 'nodes,', this.connections.length, 'connections');
             
         } catch (error) {
             console.error('❌ Error loading canvas data:', error);

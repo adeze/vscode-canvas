@@ -1,6 +1,6 @@
 # Infinite Canvas VS Code Extension
 
-Transform the infinite canvas web application into a VS Code extension that can open and edit `.canvas` files.
+Transform the infinite canvas web application into a VS Code extension that can open and edit `.canvas` files. **Fully compatible with Obsidian canvas format.**
 
 ## Project Overview
 
@@ -37,6 +37,32 @@ npm run compile
 - **Delete key**: Remove selected nodes
 
 📖 See [DEVELOPMENT.md](./DEVELOPMENT.md) for detailed development guide.
+
+## Obsidian Compatibility
+
+This extension is **fully compatible** with Obsidian canvas files:
+
+### ✅ Format Support
+- **Native Obsidian Format**: Uses the same format as Obsidian canvas
+- **Bidirectional**: Canvas files work seamlessly between VS Code and Obsidian
+- **Clean Structure**: Simple nodes and edges arrays
+
+### 📋 File Format
+Uses the standard Obsidian canvas structure:
+```json
+{
+  "nodes": [
+    {"id": "...", "x": -199, "y": -275, "width": 250, "height": 60, "type": "text", "text": "..."}
+  ],
+  "edges": [
+    {"id": "...", "fromNode": "...", "fromSide": "bottom", "toNode": "...", "toSide": "top"}
+  ]
+}
+```
+
+### 🎯 Focused Format
+- Uses Obsidian canvas format exclusively
+- Clean, simple JSON structure
 
 ## Architecture Overview
 

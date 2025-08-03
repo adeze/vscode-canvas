@@ -32,12 +32,10 @@ export function activate(context: vscode.ExtensionContext) {
 
         if (fileName) {
             const filePath = vscode.Uri.joinPath(workspaceFolder.uri, fileName);
+            // Create new files in Obsidian-compatible format
             const initialContent = JSON.stringify({
-                version: "1.0",
-                canvas: {
-                    viewport: { x: 0, y: 0, zoom: 1 },
-                    elements: []
-                }
+                nodes: [],
+                edges: []
             }, null, 2);
 
             await vscode.workspace.fs.writeFile(filePath, Buffer.from(initialContent));
