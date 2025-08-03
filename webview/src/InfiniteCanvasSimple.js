@@ -285,6 +285,7 @@ class InputHandler {
         this.lastMouseY = 0;
         this.dragStartX = 0;
         this.dragStartY = 0;
+        this.hasMoved = false;
         
         this.setupEventListeners();
     }
@@ -333,10 +334,12 @@ class InputHandler {
         const canvasY = (mouseY - this.canvasState.offsetY) / this.canvasState.scale;
         
         const clickedNode = this.canvasState.getNodeAt(canvasX, canvasY);
+        console.log('🎯 Mouse down on node:', clickedNode ? clickedNode.id : 'background');
         
         if (clickedNode) {
             // Node interaction
             this.canvasState.selectNode(clickedNode);
+            console.log('✅ Node selected:', clickedNode.id, 'Total selected:', this.canvasState.selectedNodes.length);
             this.isNodeDragging = true;
             this.draggedNode = clickedNode;
             this.dragStartX = canvasX - clickedNode.x;
@@ -344,12 +347,14 @@ class InputHandler {
         } else {
             // Start panning
             this.canvasState.clearSelection();
+            console.log('🧹 Selection cleared');
             this.isPanning = true;
         }
         
         this.lastMouseX = mouseX;
         this.lastMouseY = mouseY;
         this.isDragging = true;
+        this.hasMoved = false;
     }
     
     handleMouseMove(e) {
@@ -360,6 +365,11 @@ class InputHandler {
         if (this.isDragging) {
             const deltaX = mouseX - this.lastMouseX;
             const deltaY = mouseY - this.lastMouseY;
+            
+            // Track if we've actually moved (not just a click)
+            if (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2) {
+                this.hasMoved = true;
+            }
             
             if (this.isNodeDragging && this.draggedNode) {
                 // Move node
@@ -382,10 +392,19 @@ class InputHandler {
     }
     
     handleMouseUp(e) {
+        console.log('🖱️ Mouse up - was dragging:', this.isDragging, 'was node dragging:', this.isNodeDragging);
+        
+        // If we weren't really dragging (just a click), ensure selection is maintained
+        if (this.draggedNode && !this.hasMoved) {
+            console.log('👆 Simple click on node, ensuring selection');
+            this.canvasState.selectNode(this.draggedNode);
+        }
+        
         this.isDragging = false;
         this.isNodeDragging = false;
         this.isPanning = false;
         this.draggedNode = null;
+        this.hasMoved = false;
     }
     
     handleWheel(e) {
@@ -438,10 +457,20 @@ class InputHandler {
     }
     
     handleKeyDown(e) {
-        if (e.key === 'Delete' && this.canvasState.selectedNodes.length > 0) {
-            this.canvasState.selectedNodes.forEach(node => {
+        console.log('⌨️ Key pressed:', e.key, 'Selected nodes:', this.canvasState.selectedNodes.length);
+        
+        // Support both Delete and Backspace keys for node deletion
+        if ((e.key === 'Delete' || e.key === 'Backspace') && this.canvasState.selectedNodes.length > 0) {
+            console.log('🗑️ Deleting nodes:', this.canvasState.selectedNodes.map(n => n.id));
+            
+            // Create a copy of the array since we'll be modifying the original
+            const nodesToDelete = [...this.canvasState.selectedNodes];
+            nodesToDelete.forEach(node => {
                 this.canvasState.deleteNode(node);
             });
+            
+            console.log('✅ Nodes deleted. Remaining nodes:', this.canvasState.nodes.length);
+            e.preventDefault(); // Prevent default browser behavior
         }
     }
     
