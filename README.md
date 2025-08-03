@@ -6,7 +6,37 @@ Transform the infinite canvas web application into a VS Code extension that can 
 
 **Goal**: Adapt the existing infinite canvas web app to work as a VS Code extension, allowing users to open and edit canvas files directly within VS Code.
 
-**Status**: 🎯 Design Phase - Architecture Complete
+**Status**: ✅ Phase 1 Complete - Basic Extension Implemented
+
+## Quick Start
+
+### Development Setup
+```bash
+# Install dependencies
+npm install
+
+# Compile TypeScript  
+npm run compile
+
+# Start development
+# 1. Open this project in VS Code
+# 2. Launch Extension Development Host:
+#    - Mac: Cmd+Shift+P → "Debug: Start Debugging"
+#    - Or: Run menu → Start Debugging
+#    - Or: Fn+F5 (if you have function keys)
+# 3. In new window, create a .canvas file
+# 4. Double-click to open with Infinite Canvas
+```
+
+### Basic Usage
+- **Double-click empty space**: Create new node
+- **Double-click node**: Edit text
+- **Drag nodes**: Move around canvas
+- **Mouse wheel**: Zoom in/out
+- **Drag background**: Pan canvas
+- **Delete key**: Remove selected nodes
+
+📖 See [DEVELOPMENT.md](./DEVELOPMENT.md) for detailed development guide.
 
 ## Architecture Overview
 
@@ -145,26 +175,29 @@ infinite-canvas-vscode/
 
 ## Migration Roadmap
 
-### Phase 1: Basic Extension (Week 1)
-- [ ] Create VS Code extension project
-- [ ] Copy web app to webview folder
-- [ ] Register `.canvas` file association in package.json
-- [ ] Create basic extension.ts with webview
-- [ ] Test opening .canvas files
+### Phase 1: Basic Extension (Week 1) ✅ COMPLETE
+- [x] Create VS Code extension project
+- [x] Copy web app to webview folder (simplified version)
+- [x] Register `.canvas` file association in package.json
+- [x] Create basic extension.ts with webview
+- [x] Implement core canvas functionality
 
 **Deliverables**:
-- Working VS Code extension that opens `.canvas` files
-- Web app loads in VS Code webview
+- ✅ Working VS Code extension that opens `.canvas` files
+- ✅ Basic infinite canvas with create/edit/delete nodes
+- ✅ File save/load integration
 
-### Phase 2: File Integration (Week 2)
-- [ ] Add save/load messaging between extension and webview
-- [ ] Integrate with VS Code file system API
-- [ ] Handle file changes and auto-save
-- [ ] Test with existing .canvas files from web app
+### Phase 2: Enhancement (Week 2) - IN PROGRESS
+- [x] Add save/load messaging between extension and webview
+- [x] Integrate with VS Code file system API  
+- [x] Handle file changes and auto-save
+- [ ] Add AI integration from original web app
+- [ ] Improve UI with toolbar and better controls
+- [ ] Add connection creation workflow
 
 **Deliverables**:
-- Complete file I/O functionality
-- Seamless save/load experience
+- Enhanced canvas editor with full feature set
+- AI-powered content generation
 
 ### Phase 3: Polish & Publishing (Week 3)
 - [ ] Add extension icon and marketplace assets
