@@ -125,18 +125,37 @@ class CanvasState {
         }
     }
     
-    createConnection(fromNode, toNode) {
+    createConnection(fromNode, toNode, fromSide = null, toSide = null) {
         const connection = {
             id: `conn_${Date.now()}`,
             from: fromNode.id,
             to: toNode.id,
             fromNode: fromNode,
-            toNode: toNode
+            toNode: toNode,
+            fromSide: fromSide,
+            toSide: toSide
         };
         
         this.connections.push(connection);
+        console.log('✅ Connection created:', connection.id, 'from', fromNode.id, 'to', toNode.id);
         this.notifyStateChange();
         return connection;
+    }
+    
+    selectConnection(connection) {
+        this.clearSelection();
+        this.selectedConnection = connection;
+        console.log('🔗 Connection selected:', connection.id);
+    }
+    
+    deleteConnection(connection) {
+        const index = this.connections.indexOf(connection);
+        if (index > -1) {
+            this.connections.splice(index, 1);
+            this.selectedConnection = null;
+            this.notifyStateChange();
+            console.log('🗑️ Connection deleted:', connection.id);
+        }
     }
     
     selectNode(node) {
@@ -287,6 +306,13 @@ class InputHandler {
         this.dragStartY = 0;
         this.hasMoved = false;
         
+        // Connection functionality
+        this.isConnecting = false;
+        this.connectionStart = null;
+        this.connectionStartPoint = null;
+        this.hoveredNode = null;
+        this.hoveredConnectionPoint = null;
+        
         this.setupEventListeners();
     }
     
@@ -336,8 +362,33 @@ class InputHandler {
         const clickedNode = this.canvasState.getNodeAt(canvasX, canvasY);
         console.log('🎯 Mouse down on node:', clickedNode ? clickedNode.id : 'background');
         
+        // Check if clicking on connection first
+        if (!clickedNode) {
+            const clickedConnection = this.getConnectionAtPoint(canvasX, canvasY);
+            if (clickedConnection) {
+                console.log('🔗 Connection clicked:', clickedConnection.id);
+                this.canvasState.selectConnection(clickedConnection);
+                this.isDragging = false;
+                return;
+            }
+        }
+        
         if (clickedNode) {
-            // Node interaction
+            // Check if clicking on a connection point (hold Shift to connect)
+            const connectionPoint = this.getConnectionPointAt(clickedNode, canvasX, canvasY);
+            
+            if (e.shiftKey && connectionPoint) {
+                // Start connection
+                console.log('🔗 Starting connection from:', clickedNode.id, connectionPoint.side);
+                this.isConnecting = true;
+                this.connectionStart = clickedNode;
+                this.connectionStartPoint = connectionPoint;
+                this.canvasState.clearSelection();
+                this.isDragging = false;
+                return;
+            }
+            
+            // Normal node interaction
             this.canvasState.selectNode(clickedNode);
             console.log('✅ Node selected:', clickedNode.id, 'Total selected:', this.canvasState.selectedNodes.length);
             this.isNodeDragging = true;
@@ -362,6 +413,29 @@ class InputHandler {
         const mouseX = e.clientX - rect.left;
         const mouseY = e.clientY - rect.top;
         
+        // Convert to canvas coordinates for hover detection
+        const canvasX = (mouseX - this.canvasState.offsetX) / this.canvasState.scale;
+        const canvasY = (mouseY - this.canvasState.offsetY) / this.canvasState.scale;
+        
+        // Update hover state
+        this.hoveredNode = this.canvasState.getNodeAt(canvasX, canvasY);
+        if (this.hoveredNode) {
+            this.hoveredConnectionPoint = this.getConnectionPointAt(this.hoveredNode, canvasX, canvasY);
+        } else {
+            this.hoveredConnectionPoint = null;
+        }
+        
+        // Update cursor based on hover state
+        if (this.isConnecting) {
+            this.canvas.style.cursor = 'crosshair';
+        } else if (this.hoveredConnectionPoint && e.shiftKey) {
+            this.canvas.style.cursor = 'copy';
+        } else if (this.hoveredNode) {
+            this.canvas.style.cursor = 'grab';
+        } else {
+            this.canvas.style.cursor = 'default';
+        }
+        
         if (this.isDragging) {
             const deltaX = mouseX - this.lastMouseX;
             const deltaY = mouseY - this.lastMouseY;
@@ -373,9 +447,6 @@ class InputHandler {
             
             if (this.isNodeDragging && this.draggedNode) {
                 // Move node
-                const canvasX = (mouseX - this.canvasState.offsetX) / this.canvasState.scale;
-                const canvasY = (mouseY - this.canvasState.offsetY) / this.canvasState.scale;
-                
                 this.draggedNode.x = canvasX - this.dragStartX;
                 this.draggedNode.y = canvasY - this.dragStartY;
                 
@@ -392,7 +463,39 @@ class InputHandler {
     }
     
     handleMouseUp(e) {
-        console.log('🖱️ Mouse up - was dragging:', this.isDragging, 'was node dragging:', this.isNodeDragging);
+        console.log('🖱️ Mouse up - was dragging:', this.isDragging, 'was node dragging:', this.isNodeDragging, 'was connecting:', this.isConnecting);
+        
+        // Handle connection completion
+        if (this.isConnecting && this.connectionStart) {
+            const rect = this.canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            const canvasX = (mouseX - this.canvasState.offsetX) / this.canvasState.scale;
+            const canvasY = (mouseY - this.canvasState.offsetY) / this.canvasState.scale;
+            
+            const targetNode = this.canvasState.getNodeAt(canvasX, canvasY);
+            
+            if (targetNode && targetNode !== this.connectionStart) {
+                const targetConnectionPoint = this.getConnectionPointAt(targetNode, canvasX, canvasY);
+                
+                console.log('🔗 Completing connection to:', targetNode.id, targetConnectionPoint ? targetConnectionPoint.side : 'auto');
+                
+                this.canvasState.createConnection(
+                    this.connectionStart, 
+                    targetNode, 
+                    this.connectionStartPoint ? this.connectionStartPoint.side : null,
+                    targetConnectionPoint ? targetConnectionPoint.side : null
+                );
+            } else {
+                console.log('❌ Connection cancelled - no valid target');
+            }
+            
+            // Reset connection state
+            this.isConnecting = false;
+            this.connectionStart = null;
+            this.connectionStartPoint = null;
+            this.canvas.style.cursor = 'default';
+        }
         
         // If we weren't really dragging (just a click), ensure selection is maintained
         if (this.draggedNode && !this.hasMoved) {
@@ -457,20 +560,41 @@ class InputHandler {
     }
     
     handleKeyDown(e) {
-        console.log('⌨️ Key pressed:', e.key, 'Selected nodes:', this.canvasState.selectedNodes.length);
+        console.log('⌨️ Key pressed:', e.key, 'Selected nodes:', this.canvasState.selectedNodes.length, 'Selected connection:', this.canvasState.selectedConnection ? this.canvasState.selectedConnection.id : 'none');
         
-        // Support both Delete and Backspace keys for node deletion
-        if ((e.key === 'Delete' || e.key === 'Backspace') && this.canvasState.selectedNodes.length > 0) {
-            console.log('🗑️ Deleting nodes:', this.canvasState.selectedNodes.map(n => n.id));
+        // Support both Delete and Backspace keys for deletion
+        if (e.key === 'Delete' || e.key === 'Backspace') {
+            // Delete selected connection first if any
+            if (this.canvasState.selectedConnection) {
+                console.log('🗑️ Deleting connection:', this.canvasState.selectedConnection.id);
+                this.canvasState.deleteConnection(this.canvasState.selectedConnection);
+                e.preventDefault();
+                return;
+            }
             
-            // Create a copy of the array since we'll be modifying the original
-            const nodesToDelete = [...this.canvasState.selectedNodes];
-            nodesToDelete.forEach(node => {
-                this.canvasState.deleteNode(node);
-            });
-            
-            console.log('✅ Nodes deleted. Remaining nodes:', this.canvasState.nodes.length);
-            e.preventDefault(); // Prevent default browser behavior
+            // Then delete selected nodes
+            if (this.canvasState.selectedNodes.length > 0) {
+                console.log('🗑️ Deleting nodes:', this.canvasState.selectedNodes.map(n => n.id));
+                
+                // Create a copy of the array since we'll be modifying the original
+                const nodesToDelete = [...this.canvasState.selectedNodes];
+                nodesToDelete.forEach(node => {
+                    this.canvasState.deleteNode(node);
+                });
+                
+                console.log('✅ Nodes deleted. Remaining nodes:', this.canvasState.nodes.length);
+                e.preventDefault();
+            }
+        }
+        
+        // Escape to cancel connection
+        if (e.key === 'Escape' && this.isConnecting) {
+            console.log('❌ Connection cancelled with Escape');
+            this.isConnecting = false;
+            this.connectionStart = null;
+            this.connectionStartPoint = null;
+            this.canvas.style.cursor = 'default';
+            e.preventDefault();
         }
     }
     
@@ -511,6 +635,89 @@ class InputHandler {
         
         input.addEventListener('blur', finishEditing);
     }
+    
+    // Connection point detection
+    getConnectionPoints(node) {
+        const { x, y, width, height } = node;
+        return [
+            { x: x + width / 2, y: y, side: 'top' },           // Top
+            { x: x + width, y: y + height / 2, side: 'right' }, // Right
+            { x: x + width / 2, y: y + height, side: 'bottom' }, // Bottom
+            { x: x, y: y + height / 2, side: 'left' }          // Left
+        ];
+    }
+    
+    getConnectionPointAt(node, x, y) {
+        const points = this.getConnectionPoints(node);
+        const pointRadius = 16; // Detection radius
+        
+        for (const point of points) {
+            const distance = Math.sqrt(Math.pow(x - point.x, 2) + Math.pow(y - point.y, 2));
+            if (distance <= pointRadius) {
+                return point;
+            }
+        }
+        return null;
+    }
+    
+    getConnectionAtPoint(x, y, tolerance = 8) {
+        for (const connection of this.canvasState.connections) {
+            const fromNode = this.canvasState.nodes.find(n => n.id === connection.from);
+            const toNode = this.canvasState.nodes.find(n => n.id === connection.to);
+            
+            if (!fromNode || !toNode) continue;
+            
+            // Get connection points
+            const fromPoints = this.getConnectionPoints(fromNode);
+            const toPoints = this.getConnectionPoints(toNode);
+            
+            // Find best connection points
+            let bestFromPoint = fromPoints[0];
+            let bestToPoint = toPoints[0];
+            
+            if (connection.fromSide && connection.toSide) {
+                bestFromPoint = fromPoints.find(p => p.side === connection.fromSide) || fromPoints[0];
+                bestToPoint = toPoints.find(p => p.side === connection.toSide) || toPoints[0];
+            } else {
+                // Find closest points
+                let shortestDistance = Infinity;
+                fromPoints.forEach(fromPoint => {
+                    toPoints.forEach(toPoint => {
+                        const distance = Math.sqrt(
+                            Math.pow(fromPoint.x - toPoint.x, 2) + 
+                            Math.pow(fromPoint.y - toPoint.y, 2)
+                        );
+                        if (distance < shortestDistance) {
+                            shortestDistance = distance;
+                            bestFromPoint = fromPoint;
+                            bestToPoint = toPoint;
+                        }
+                    });
+                });
+            }
+            
+            // Check if point is close to the line
+            const distance = this.distanceToLineSegment(x, y, bestFromPoint.x, bestFromPoint.y, bestToPoint.x, bestToPoint.y);
+            if (distance <= tolerance) {
+                return connection;
+            }
+        }
+        return null;
+    }
+    
+    distanceToLineSegment(px, py, x1, y1, x2, y2) {
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const length = Math.sqrt(dx * dx + dy * dy);
+        
+        if (length === 0) return Math.sqrt((px - x1) * (px - x1) + (py - y1) * (py - y1));
+        
+        const t = Math.max(0, Math.min(1, ((px - x1) * dx + (py - y1) * dy) / (length * length)));
+        const projX = x1 + t * dx;
+        const projY = y1 + t * dy;
+        
+        return Math.sqrt((px - projX) * (px - projX) + (py - projY) * (py - projY));
+    }
 }
 
 // Simplified Canvas Renderer
@@ -529,15 +736,33 @@ class CanvasRenderer {
         // Draw grid
         this.drawGrid(ctx, canvasState, canvas);
         
-        // Draw connections
+        // Draw connections first (behind nodes)
         canvasState.connections.forEach(connection => {
-            this.drawConnection(ctx, connection);
+            const isSelected = canvasState.selectedConnection && canvasState.selectedConnection.id === connection.id;
+            this.drawConnection(ctx, connection, canvasState.nodes, isSelected);
         });
         
         // Draw nodes
         canvasState.nodes.forEach(node => {
-            this.drawNode(ctx, node);
+            const showConnectionPoints = node.isSelected || 
+                (inputHandler.hoveredNode === node && inputHandler.hoveredConnectionPoint) ||
+                inputHandler.isConnecting;
+            this.drawNode(ctx, node, showConnectionPoints, inputHandler);
         });
+        
+        // Draw connection preview if connecting
+        if (inputHandler.isConnecting && inputHandler.connectionStart) {
+            this.drawConnectionPreview(
+                ctx,
+                inputHandler.connectionStart,
+                inputHandler.lastMouseX || 0,
+                inputHandler.lastMouseY || 0,
+                canvasState.offsetX,
+                canvasState.offsetY,
+                canvasState.scale,
+                inputHandler.connectionStartPoint
+            );
+        }
         
         // Restore context
         ctx.restore();
@@ -569,7 +794,7 @@ class CanvasRenderer {
         ctx.stroke();
     }
     
-    drawNode(ctx, node) {
+    drawNode(ctx, node, showConnectionPoints = false, inputHandler = null) {
         // Draw background
         ctx.fillStyle = node.backgroundColor;
         ctx.fillRect(node.x, node.y, node.width, node.height);
@@ -613,42 +838,166 @@ class CanvasRenderer {
                 startY + index * lineHeight
             );
         });
+        
+        // Draw connection points if requested
+        if (showConnectionPoints) {
+            this.drawConnectionPoints(ctx, node, inputHandler);
+        }
     }
     
-    drawConnection(ctx, connection) {
-        const fromNode = connection.fromNode;
-        const toNode = connection.toNode;
+    drawConnection(ctx, connection, nodes, isSelected = false) {
+        const fromNode = nodes.find(n => n.id === connection.from) || connection.fromNode;
+        const toNode = nodes.find(n => n.id === connection.to) || connection.toNode;
         
         if (!fromNode || !toNode) return;
         
-        const startX = fromNode.x + fromNode.width / 2;
-        const startY = fromNode.y + fromNode.height / 2;
-        const endX = toNode.x + toNode.width / 2;
-        const endY = toNode.y + toNode.height / 2;
+        // Get connection points
+        const fromPoints = this.getConnectionPoints(fromNode);
+        const toPoints = this.getConnectionPoints(toNode);
         
-        ctx.strokeStyle = '#569cd6';
-        ctx.lineWidth = 2;
+        // Find best connection points
+        let bestFromPoint = fromPoints[0];
+        let bestToPoint = toPoints[0];
+        
+        if (connection.fromSide && connection.toSide) {
+            bestFromPoint = fromPoints.find(p => p.side === connection.fromSide) || fromPoints[0];
+            bestToPoint = toPoints.find(p => p.side === connection.toSide) || toPoints[0];
+        } else {
+            // Find closest points
+            let shortestDistance = Infinity;
+            fromPoints.forEach(fromPoint => {
+                toPoints.forEach(toPoint => {
+                    const distance = Math.sqrt(
+                        Math.pow(fromPoint.x - toPoint.x, 2) + 
+                        Math.pow(fromPoint.y - toPoint.y, 2)
+                    );
+                    if (distance < shortestDistance) {
+                        shortestDistance = distance;
+                        bestFromPoint = fromPoint;
+                        bestToPoint = toPoint;
+                    }
+                });
+            });
+        }
+        
+        // Calculate angle for arrow
+        const angle = Math.atan2(bestToPoint.y - bestFromPoint.y, bestToPoint.x - bestFromPoint.x);
+        const arrowOffset = 16;
+        const arrowX = bestToPoint.x - Math.cos(angle) * arrowOffset;
+        const arrowY = bestToPoint.y - Math.sin(angle) * arrowOffset;
+        
+        // Draw line with selection styling
+        ctx.strokeStyle = isSelected ? '#2196f3' : '#569cd6';
+        ctx.lineWidth = isSelected ? 3 : 2;
+        ctx.setLineDash(isSelected ? [5, 5] : []);
+        
         ctx.beginPath();
-        ctx.moveTo(startX, startY);
-        ctx.lineTo(endX, endY);
+        ctx.moveTo(bestFromPoint.x, bestFromPoint.y);
+        ctx.lineTo(arrowX, arrowY);
         ctx.stroke();
+        ctx.setLineDash([]); // Reset dash
         
-        // Draw arrow
-        const angle = Math.atan2(endY - startY, endX - startX);
-        const arrowSize = 10;
+        // Draw arrowhead
+        this.drawArrowhead(ctx, arrowX, arrowY, angle, isSelected);
+    }
+    
+    drawArrowhead(ctx, x, y, angle, isSelected = false) {
+        const arrowLength = 18;
+        const arrowAngle = Math.PI / 6;
+        
+        ctx.fillStyle = isSelected ? '#2196f3' : '#569cd6';
+        ctx.strokeStyle = isSelected ? '#1565c0' : '#4f46e5';
+        ctx.lineWidth = 2;
         
         ctx.beginPath();
-        ctx.moveTo(endX, endY);
+        ctx.moveTo(x, y);
         ctx.lineTo(
-            endX - arrowSize * Math.cos(angle - Math.PI / 6),
-            endY - arrowSize * Math.sin(angle - Math.PI / 6)
+            x - arrowLength * Math.cos(angle - arrowAngle),
+            y - arrowLength * Math.sin(angle - arrowAngle)
         );
         ctx.lineTo(
-            endX - arrowSize * Math.cos(angle + Math.PI / 6),
-            endY - arrowSize * Math.sin(angle + Math.PI / 6)
+            x - arrowLength * 0.6 * Math.cos(angle),
+            y - arrowLength * 0.6 * Math.sin(angle)
+        );
+        ctx.lineTo(
+            x - arrowLength * Math.cos(angle + arrowAngle),
+            y - arrowLength * Math.sin(angle + arrowAngle)
         );
         ctx.closePath();
-        ctx.fillStyle = '#569cd6';
         ctx.fill();
+        ctx.stroke();
+    }
+    
+    drawConnectionPoints(ctx, node, inputHandler) {
+        const points = this.getConnectionPoints(node);
+        const pointRadius = 12;
+        
+        points.forEach(point => {
+            // Check if this point is being hovered
+            const isHovered = inputHandler && inputHandler.hoveredConnectionPoint && 
+                             inputHandler.hoveredConnectionPoint.side === point.side;
+            
+            const currentRadius = isHovered ? pointRadius + 4 : pointRadius;
+            
+            // Draw connection point with glow effect
+            ctx.shadowColor = 'rgba(34, 197, 94, 0.8)';
+            ctx.shadowBlur = isHovered ? 20 : 12;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+            
+            // Outer circle
+            ctx.fillStyle = isHovered ? '#10b981' : '#22c55e';
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, currentRadius, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Inner circle
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, isHovered ? 4 : 3, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Reset shadow
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+        });
+    }
+    
+    drawConnectionPreview(ctx, connectionStart, lastMouseX, lastMouseY, offsetX, offsetY, scale, connectionPoint = null) {
+        if (!connectionStart) return;
+        
+        const canvasX = (lastMouseX - offsetX) / scale;
+        const canvasY = (lastMouseY - offsetY) / scale;
+        
+        // Use connection point if provided, otherwise use node center
+        let fromX, fromY;
+        if (connectionPoint) {
+            fromX = connectionPoint.x;
+            fromY = connectionPoint.y;
+        } else {
+            fromX = connectionStart.x + connectionStart.width / 2;
+            fromY = connectionStart.y + connectionStart.height / 2;
+        }
+        
+        // Draw dashed preview line
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]);
+        
+        ctx.beginPath();
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(canvasX, canvasY);
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset dash
+    }
+    
+    getConnectionPoints(node) {
+        const { x, y, width, height } = node;
+        return [
+            { x: x + width / 2, y: y, side: 'top' },
+            { x: x + width, y: y + height / 2, side: 'right' },
+            { x: x + width / 2, y: y + height, side: 'bottom' },
+            { x: x, y: y + height / 2, side: 'left' }
+        ];
     }
 }

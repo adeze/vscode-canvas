@@ -62,6 +62,9 @@ npm run watch
 - ✅ Edit nodes (double-click node)
 - ✅ Delete nodes (select + Delete key)
 - ✅ Drag nodes
+- ✅ Create connections (Shift + drag from node to node)
+- ✅ Select and delete connections
+- ✅ Visual connection points and preview
 - ✅ File save/load integration
 - ✅ VS Code theme integration
 
@@ -71,7 +74,14 @@ npm run watch
 - **Drag node**: Move node
 - **Mouse wheel**: Zoom in/out
 - **Click + drag background**: Pan canvas
-- **Delete key**: Delete selected nodes
+- **Delete/Backspace key**: Delete selected nodes or connections
+
+### Connection Controls
+- **Shift + click connection point**: Start creating connection
+- **Drag to another node**: Complete connection
+- **Click connection**: Select connection
+- **Delete/Backspace**: Delete selected connection
+- **Escape**: Cancel connection creation
 
 ## Development Workflow
 
