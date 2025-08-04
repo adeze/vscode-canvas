@@ -38,9 +38,22 @@ npm run compile
 - **Delete key**: Remove selected nodes
 - **Drag & drop files**: Create file nodes from workspace files
 
+### AI Features Usage
+- **Generate Ideas**: Select a node and click "✨ Generate Ideas" in the AI panel
+- **Configure Models**: Use checkboxes to enable/disable AI models
+- **API Setup**: Add your Groq API key in VS Code settings (optional - works with mock responses)
+- **Connect Nodes**: Hold Shift and drag from connection points to create relationships
+
 📖 See [DEVELOPMENT.md](./DEVELOPMENT.md) for detailed development guide.
 
 ## 🚀 Recent Features Added
+
+### 🤖 AI-Powered Content Generation
+- **Generate Ideas Button**: Click to generate connected ideas from selected nodes
+- **Multiple AI Models**: Choose from Llama 3.3, QWQ, and Gemma2 models
+- **Demo Mode**: Works with free Groq API or falls back to mock responses
+- **Smart Context**: Uses connected nodes as conversation history
+- **Visual Feedback**: Real-time notifications and progress indicators
 
 ### ✨ Markdown File Support
 - **File node referencing**: Create nodes that reference workspace files
@@ -244,13 +257,13 @@ infinite-canvas-vscode/
 - ✅ Basic infinite canvas with create/edit/delete nodes
 - ✅ File save/load integration
 
-### Phase 2: Enhancement (Week 2) - IN PROGRESS
+### Phase 2: Enhancement (Week 2) ✅ COMPLETE
 - [x] Add save/load messaging between extension and webview
 - [x] Integrate with VS Code file system API  
 - [x] Handle file changes and auto-save
-- [ ] Add AI integration from original web app
-- [ ] Improve UI with toolbar and better controls
-- [ ] Add connection creation workflow
+- [x] Add AI integration from original web app
+- [x] Implement generate ideas button and AI model selection
+- [x] Add connection creation workflow
 
 **Deliverables**:
 - Enhanced canvas editor with full feature set

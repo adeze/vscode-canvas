@@ -1,5 +1,5 @@
 // Simplified Infinite Canvas for VS Code Extension
-// Core functionality without complex AI integrations
+// Core functionality with AI integrations
 
 export class InfiniteCanvas {
     constructor(canvasId) {
@@ -19,6 +19,10 @@ export class InfiniteCanvas {
         this.inputHandler = new InputHandler(this.canvas, this.canvasState);
         this.renderer = new CanvasRenderer();
         
+        // Initialize AI functionality
+        this.aiManager = null;
+        this.uiManager = new UIManager(this);
+        
         // Initialize markdown renderer modules
         this.markdownRenderer = null;
         this.parseMarkdown = null;
@@ -32,8 +36,8 @@ export class InfiniteCanvas {
         this.setupCanvas();
         this.setupRenderOnDemand();
         
-        // Initialize markdown renderer then start render loop
-        this.initializeMarkdownRenderer().then(() => {
+        // Initialize AI and markdown renderer then start render loop
+        this.initializeComponents().then(() => {
             if (!this.renderLoopStarted) {
                 this.startRenderLoop();
                 this.renderLoopStarted = true;
@@ -48,6 +52,32 @@ export class InfiniteCanvas {
                 console.log('⚠️ Infinite Canvas initialized with fallback rendering');
             }
         });
+    }
+    
+    async initializeComponents() {
+        // Load markdown renderer
+        await this.initializeMarkdownRenderer();
+        
+        // Initialize AI functionality
+        await this.initializeAI();
+        
+        // Set up UI controls
+        this.uiManager.setupUI();
+    }
+    
+    async initializeAI() {
+        try {
+            console.log('🤖 Initializing AI functionality...');
+            
+            // Dynamic import of AI components
+            const { AIManager } = await import('./AIManager.js');
+            this.aiManager = new AIManager(this.canvasState, this.uiManager);
+            
+            console.log('✅ AI Manager initialized');
+        } catch (error) {
+            console.warn('⚠️ Failed to initialize AI functionality:', error);
+            this.aiManager = null;
+        }
     }
     
     async initializeMarkdownRenderer() {
@@ -1890,5 +1920,265 @@ class CanvasRenderer {
             { x: x + width / 2, y: y + height, side: 'bottom' },
             { x: x, y: y + height / 2, side: 'left' }
         ];
+    }
+}
+
+// UI Manager for handling AI controls and notifications
+class UIManager {
+    constructor(canvas) {
+        this.canvas = canvas;
+        this.activeModels = {};
+        this.notifications = [];
+    }
+    
+    setupUI() {
+        this.createAIControls();
+        this.createNotificationContainer();
+        console.log('🎨 UI Manager setup completed');
+    }
+    
+    createAIControls() {
+        // Create AI controls container
+        const controlsContainer = document.createElement('div');
+        controlsContainer.id = 'ai-controls';
+        controlsContainer.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(45, 45, 45, 0.95);
+            border: 1px solid #666;
+            border-radius: 8px;
+            padding: 15px;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            min-width: 250px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        `;
+        
+        // Title
+        const title = document.createElement('h3');
+        title.textContent = '🤖 AI Ideas';
+        title.style.cssText = `
+            margin: 0 0 15px 0;
+            color: #e0e0e0;
+            font-size: 16px;
+            font-weight: 600;
+        `;
+        controlsContainer.appendChild(title);
+        
+        // Generate Ideas Button
+        const generateBtn = document.createElement('button');
+        generateBtn.id = 'generate-ideas-btn';
+        generateBtn.innerHTML = '✨ Generate Ideas';
+        generateBtn.style.cssText = `
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        `;
+        
+        generateBtn.addEventListener('mouseenter', () => {
+            generateBtn.style.transform = 'translateY(-2px)';
+            generateBtn.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)';
+        });
+        
+        generateBtn.addEventListener('mouseleave', () => {
+            generateBtn.style.transform = 'translateY(0)';
+            generateBtn.style.boxShadow = 'none';
+        });
+        
+        generateBtn.addEventListener('click', () => {
+            if (this.canvas.aiManager) {
+                this.canvas.aiManager.generateAI();
+            } else {
+                this.showNotification('AI functionality not available', 'error');
+            }
+        });
+        
+        controlsContainer.appendChild(generateBtn);
+        
+        // Model Selection
+        const modelLabel = document.createElement('label');
+        modelLabel.textContent = 'Active Models:';
+        modelLabel.style.cssText = `
+            display: block;
+            color: #b0b0b0;
+            font-size: 12px;
+            margin-bottom: 8px;
+            font-weight: 500;
+        `;
+        controlsContainer.appendChild(modelLabel);
+        
+        // Model checkboxes container
+        const modelsContainer = document.createElement('div');
+        modelsContainer.id = 'models-container';
+        modelsContainer.style.cssText = `
+            background: rgba(30, 30, 30, 0.7);
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 10px;
+        `;
+        
+        // Add model checkboxes
+        const models = ['llama-3.3-70b-versatile', 'qwen-qwq-32b', 'gemma2-9b-it'];
+        models.forEach(model => {
+            const modelDiv = document.createElement('div');
+            modelDiv.style.cssText = `
+                display: flex;
+                align-items: center;
+                margin-bottom: 6px;
+            `;
+            
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = `model-${model}`;
+            checkbox.checked = true; // Default to checked
+            checkbox.style.cssText = `
+                margin-right: 8px;
+                accent-color: #667eea;
+            `;
+            
+            const label = document.createElement('label');
+            label.htmlFor = `model-${model}`;
+            label.textContent = model.split('-')[0]; // Show simplified name
+            label.style.cssText = `
+                color: #d0d0d0;
+                font-size: 11px;
+                cursor: pointer;
+                user-select: none;
+            `;
+            
+            checkbox.addEventListener('change', () => {
+                this.updateModelSelection(model, checkbox.checked);
+            });
+            
+            modelDiv.appendChild(checkbox);
+            modelDiv.appendChild(label);
+            modelsContainer.appendChild(modelDiv);
+        });
+        
+        controlsContainer.appendChild(modelsContainer);
+        
+        // Status indicator
+        const statusDiv = document.createElement('div');
+        statusDiv.id = 'ai-status';
+        statusDiv.style.cssText = `
+            font-size: 11px;
+            color: #888;
+            text-align: center;
+            padding: 5px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+        `;
+        statusDiv.textContent = 'Demo Mode (Groq)';
+        controlsContainer.appendChild(statusDiv);
+        
+        document.body.appendChild(controlsContainer);
+    }
+    
+    createNotificationContainer() {
+        const container = document.createElement('div');
+        container.id = 'notifications-container';
+        container.style.cssText = `
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 10000;
+            pointer-events: none;
+        `;
+        document.body.appendChild(container);
+    }
+    
+    updateModelSelection(model, isActive) {
+        if (this.canvas.aiManager) {
+            const activeModels = this.canvas.aiManager.activeModels;
+            activeModels[model] = isActive;
+            this.canvas.aiManager.setActiveModels(activeModels);
+            console.log(`🔧 Model ${model} ${isActive ? 'enabled' : 'disabled'}`);
+        }
+    }
+    
+    showNotification(message, type = 'info', duration = 3000) {
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            background: ${this.getNotificationColor(type)};
+            color: white;
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            max-width: 300px;
+            font-size: 13px;
+            line-height: 1.4;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            pointer-events: auto;
+            cursor: pointer;
+            animation: slideIn 0.3s ease-out;
+        `;
+        
+        // Add animation keyframes
+        if (!document.getElementById('notification-styles')) {
+            const style = document.createElement('style');
+            style.id = 'notification-styles';
+            style.textContent = `
+                @keyframes slideIn {
+                    from { transform: translateX(-100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+                @keyframes slideOut {
+                    from { transform: translateX(0); opacity: 1; }
+                    to { transform: translateX(-100%); opacity: 0; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        notification.textContent = message;
+        
+        // Click to dismiss
+        notification.addEventListener('click', () => {
+            this.removeNotification(notification);
+        });
+        
+        const container = document.getElementById('notifications-container');
+        if (container) {
+            container.appendChild(notification);
+            
+            // Auto-remove after duration
+            if (duration > 0) {
+                setTimeout(() => {
+                    this.removeNotification(notification);
+                }, duration);
+            }
+        }
+        
+        console.log(`📢 ${type.toUpperCase()}: ${message}`);
+    }
+    
+    removeNotification(notification) {
+        if (notification && notification.parentNode) {
+            notification.style.animation = 'slideOut 0.3s ease-out';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }
+    }
+    
+    getNotificationColor(type) {
+        switch (type) {
+            case 'success': return '#10b981';
+            case 'error': return '#ef4444';
+            case 'warning': return '#f59e0b';
+            case 'info':
+            default: return '#3b82f6';
+        }
     }
 }

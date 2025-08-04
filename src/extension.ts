@@ -94,6 +94,16 @@ class CanvasEditorProvider implements vscode.CustomTextEditorProvider {
                     case 'createFile':
                         await this.createFile(message.filePath, message.content, webviewPanel);
                         break;
+                    case 'getGroqApiKey':
+                        // Send Groq API key to webview if available
+                        const groqApiKey = await this.getGroqApiKey();
+                        if (groqApiKey) {
+                            webviewPanel.webview.postMessage({
+                                type: 'groqApiKey',
+                                apiKey: groqApiKey
+                            });
+                        }
+                        break;
                 }
             }
         );
@@ -314,6 +324,30 @@ class CanvasEditorProvider implements vscode.CustomTextEditorProvider {
     <script nonce="${nonce}" type="module" src="${mainScriptUri}"></script>
 </body>
 </html>`;
+    }
+
+    private async getGroqApiKey(): Promise<string | null> {
+        try {
+            // Try to get from VS Code configuration
+            const config = vscode.workspace.getConfiguration('infinite-canvas');
+            const configApiKey = config.get<string>('groqApiKey');
+            
+            if (configApiKey && configApiKey.trim()) {
+                return configApiKey.trim();
+            }
+            
+            // Try to get from environment variables
+            const envApiKey = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
+            if (envApiKey && envApiKey.trim()) {
+                return envApiKey.trim();
+            }
+            
+            // No API key found
+            return null;
+        } catch (error) {
+            console.error('Error getting Groq API key:', error);
+            return null;
+        }
     }
 
     private getNonce(): string {

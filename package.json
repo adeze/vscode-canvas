@@ -49,6 +49,17 @@
           "group": "navigation"
         }
       ]
+    },
+    "configuration": {
+      "title": "Infinite Canvas",
+      "properties": {
+        "infinite-canvas.groqApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Groq API key for AI-powered idea generation (optional - fallback to mock responses if not provided)",
+          "markdownDescription": "Groq API key for AI-powered idea generation. Get your free API key at [console.groq.com](https://console.groq.com). If not provided, the extension will use mock responses."
+        }
+      }
     }
   },
   "scripts": {
