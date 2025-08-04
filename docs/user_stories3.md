@@ -28,3 +28,11 @@ bug is see:
     now we connect nodes , we send the conected nodes content also to the ai, but only his parents and parents of parents and so on , like on the web version, 
         
     now i should see from which ai model output is the node created, so for this we put a simple tooltip or text on the top of the node created, saying his model created, like on the web version 
+
+
+    i have a path problems 
+    i have some .md files. that are nested folder for eample the test3.md
+    shoud be test3.md to folder1/test3.md , thats why i got failed to load file. fix this problme, 
+
+
+    now 

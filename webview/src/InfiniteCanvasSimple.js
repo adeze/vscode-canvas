@@ -1544,21 +1544,40 @@ class InputHandler {
     createFileNodeFromPath(filePath, x, y) {
         console.log('📄 Creating file node from path:', filePath);
         
-        // Store both the full path and display name
+        // Store both the relative path and display name
         let displayName = filePath;
-        let fullPath = filePath;
+        let relativeFilePath = filePath;
         
         if (filePath.startsWith('/')) {
-            // For absolute paths, use filename for display but keep full path for content access
+            // For absolute paths, convert to relative path from common base directories
             const pathParts = filePath.split('/');
             displayName = pathParts[pathParts.length - 1];
-            fullPath = filePath; // Keep the full path
+            
+            // Try to find a relative path from common base directories
+            const commonBases = [
+                '/Users/lout/Documents/LIFE/input_output/research_input_output',
+                '/Users/lout/Documents/LIFE/input_output/output/applications/03_level_active_development/infinite_canvas1/infinite_canvas_v5_vscode'
+            ];
+            
+            for (const basePath of commonBases) {
+                if (filePath.startsWith(basePath)) {
+                    relativeFilePath = filePath.substring(basePath.length + 1); // +1 to remove leading slash
+                    console.log('📍 Converted absolute path to relative:', relativeFilePath);
+                    break;
+                }
+            }
+            
+            // If no common base found, store the absolute path
+            if (relativeFilePath === filePath) {
+                relativeFilePath = filePath;
+                console.log('📍 Using absolute path as fallback:', relativeFilePath);
+            }
         }
         
-        const fileNode = this.canvasState.createFileNode(displayName, x, y);
-        // Store the full path for content retrieval
-        fileNode.fullPath = fullPath;
-        console.log('✅ File node created:', fileNode.id, 'with full path:', fullPath);
+        const fileNode = this.canvasState.createFileNode(relativeFilePath, x, y);
+        // Store the full path for debugging
+        fileNode.fullPath = filePath;
+        console.log('✅ File node created:', fileNode.id, 'with relative path:', relativeFilePath, 'full path:', filePath);
     }
     
     promptForFileImport(file, x, y) {

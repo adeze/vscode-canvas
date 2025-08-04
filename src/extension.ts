@@ -152,13 +152,53 @@ class CanvasEditorProvider implements vscode.CustomTextEditorProvider {
         try {
             console.log('Loading file content for:', filePath);
             
-            // Resolve the file path relative to workspace
-            const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-            if (!workspaceFolder) {
-                throw new Error('No workspace folder found');
-            }
+            let fileUri: vscode.Uri;
             
-            const fileUri = vscode.Uri.joinPath(workspaceFolder.uri, filePath);
+            // If filePath is absolute, use it directly
+            if (path.isAbsolute(filePath)) {
+                console.log('Using absolute path:', filePath);
+                fileUri = vscode.Uri.file(filePath);
+            } else {
+                // For relative paths, try multiple base directories
+                const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+                if (!workspaceFolder) {
+                    throw new Error('No workspace folder found');
+                }
+                
+                console.log('Using relative path:', filePath, 'resolved to:', workspaceFolder.uri.fsPath);
+                
+                // First try relative to workspace
+                fileUri = vscode.Uri.joinPath(workspaceFolder.uri, filePath);
+                
+                // If file doesn't exist in workspace, try common relative directories
+                try {
+                    await vscode.workspace.fs.stat(fileUri);
+                } catch {
+                    // Try relative to common base directories
+                    const commonBases = [
+                        '/Users/lout/Documents/LIFE/input_output/research_input_output',
+                        path.dirname(workspaceFolder.uri.fsPath)
+                    ];
+                    
+                    let found = false;
+                    for (const basePath of commonBases) {
+                        const alternativeUri = vscode.Uri.file(path.join(basePath, filePath));
+                        try {
+                            await vscode.workspace.fs.stat(alternativeUri);
+                            fileUri = alternativeUri;
+                            found = true;
+                            console.log('Found file at alternative path:', alternativeUri.fsPath);
+                            break;
+                        } catch {
+                            // Continue trying other paths
+                        }
+                    }
+                    
+                    if (!found) {
+                        throw new Error(`File not found in any of the expected locations: ${filePath}`);
+                    }
+                }
+            }
             
             // Check if file exists and read content
             const fileStats = await vscode.workspace.fs.stat(fileUri);
