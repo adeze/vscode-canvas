@@ -183,5 +183,35 @@ window.loadCanvasContent = (content) => {
     }
 };
 
+// Handle file-related messages from extension
+window.addEventListener('message', event => {
+    const message = event.data;
+    if (!window.canvasApp || !window.canvasApp.canvas) return;
+    
+    const canvasState = window.canvasApp.canvas.canvasState;
+    if (!canvasState) return;
+    
+    switch (message.type) {
+        case 'fileContentLoaded':
+            canvasState.updateFileContent(
+                message.nodeId, 
+                message.content, 
+                message.lastModified
+            );
+            break;
+        case 'fileContentSaved':
+            console.log('✅ File saved successfully:', message.nodeId);
+            break;
+        case 'fileContentError':
+            console.error('❌ File operation error:', message.error);
+            canvasState.updateFileContent(
+                message.nodeId, 
+                message.error, 
+                null
+            );
+            break;
+    }
+});
+
 // Initialize the app
 window.canvasApp = new VSCodeCanvasApp();

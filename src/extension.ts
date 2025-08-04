@@ -85,6 +85,15 @@ class CanvasEditorProvider implements vscode.CustomTextEditorProvider {
                             content: document.getText()
                         });
                         break;
+                    case 'loadFile':
+                        await this.loadFileContent(webviewPanel, message.filePath, message.nodeId);
+                        break;
+                    case 'saveFile':
+                        await this.saveFileContent(message.filePath, message.content, webviewPanel, message.nodeId);
+                        break;
+                    case 'createFile':
+                        await this.createFile(message.filePath, message.content, webviewPanel);
+                        break;
                 }
             }
         );
@@ -116,6 +125,114 @@ class CanvasEditorProvider implements vscode.CustomTextEditorProvider {
         );
 
         await vscode.workspace.applyEdit(edit);
+    }
+
+    private async loadFileContent(webviewPanel: vscode.WebviewPanel, filePath: string, nodeId: string): Promise<void> {
+        try {
+            console.log('Loading file content for:', filePath);
+            
+            // Resolve the file path relative to workspace
+            const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+            if (!workspaceFolder) {
+                throw new Error('No workspace folder found');
+            }
+            
+            const fileUri = vscode.Uri.joinPath(workspaceFolder.uri, filePath);
+            
+            // Check if file exists and read content
+            const fileStats = await vscode.workspace.fs.stat(fileUri);
+            const fileContent = await vscode.workspace.fs.readFile(fileUri);
+            const content = Buffer.from(fileContent).toString('utf8');
+            
+            // Send content back to webview
+            webviewPanel.webview.postMessage({
+                type: 'fileContentLoaded',
+                nodeId: nodeId,
+                content: content,
+                lastModified: fileStats.mtime
+            });
+            
+        } catch (error) {
+            console.error('Error loading file content:', error);
+            
+            // Send error back to webview
+            webviewPanel.webview.postMessage({
+                type: 'fileContentError',
+                nodeId: nodeId,
+                error: `Failed to load file: ${filePath}`
+            });
+        }
+    }
+    
+    private async saveFileContent(filePath: string, content: string, webviewPanel: vscode.WebviewPanel, nodeId: string): Promise<void> {
+        try {
+            console.log('Saving file content for:', filePath);
+            
+            // Resolve the file path relative to workspace
+            const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+            if (!workspaceFolder) {
+                throw new Error('No workspace folder found');
+            }
+            
+            const fileUri = vscode.Uri.joinPath(workspaceFolder.uri, filePath);
+            
+            // Write content to file
+            const fileContent = Buffer.from(content, 'utf8');
+            await vscode.workspace.fs.writeFile(fileUri, fileContent);
+            
+            // Get updated file stats
+            const fileStats = await vscode.workspace.fs.stat(fileUri);
+            
+            // Send success response back to webview
+            webviewPanel.webview.postMessage({
+                type: 'fileContentSaved',
+                nodeId: nodeId,
+                lastModified: fileStats.mtime
+            });
+            
+        } catch (error) {
+            console.error('Error saving file content:', error);
+            
+            // Send error back to webview
+            webviewPanel.webview.postMessage({
+                type: 'fileContentError',
+                nodeId: nodeId,
+                error: `Failed to save file: ${filePath}`
+            });
+        }
+    }
+    
+    private async createFile(filePath: string, content: string, webviewPanel: vscode.WebviewPanel): Promise<void> {
+        try {
+            console.log('Creating new file:', filePath);
+            
+            // Resolve the file path relative to workspace
+            const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+            if (!workspaceFolder) {
+                throw new Error('No workspace folder found');
+            }
+            
+            const fileUri = vscode.Uri.joinPath(workspaceFolder.uri, filePath);
+            
+            // Create directories if they don't exist
+            const dirUri = vscode.Uri.joinPath(fileUri, '..');
+            try {
+                await vscode.workspace.fs.stat(dirUri);
+            } catch {
+                // Directory doesn't exist, create it
+                await vscode.workspace.fs.createDirectory(dirUri);
+            }
+            
+            // Write content to file
+            const fileContent = Buffer.from(content, 'utf8');
+            await vscode.workspace.fs.writeFile(fileUri, fileContent);
+            
+            console.log('✅ File created successfully:', filePath);
+            
+        } catch (error) {
+            console.error('Error creating file:', error);
+            vscode.window.showErrorMessage(`Failed to create file: ${filePath}`);
+        }
     }
 
     private getHtmlForWebview(webview: vscode.Webview): string {

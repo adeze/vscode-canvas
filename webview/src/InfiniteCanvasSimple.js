@@ -19,14 +19,66 @@ export class InfiniteCanvas {
         this.inputHandler = new InputHandler(this.canvas, this.canvasState);
         this.renderer = new CanvasRenderer();
         
+        // Initialize markdown renderer modules
+        this.markdownRenderer = null;
+        this.parseMarkdown = null;
+        this.renderLoopStarted = false;
+        this._markdownErrorLogged = false;
+        
         console.log('📊 Canvas state created:', this.canvasState);
         console.log('🖱️ Input handler created:', this.inputHandler);
         
-        // Set up canvas
+        // Set up canvas and render system first
         this.setupCanvas();
-        this.startRenderLoop();
+        this.setupRenderOnDemand();
         
-        console.log('✅ Infinite Canvas initialized successfully');
+        // Initialize markdown renderer then start render loop
+        this.initializeMarkdownRenderer().then(() => {
+            if (!this.renderLoopStarted) {
+                this.startRenderLoop();
+                this.renderLoopStarted = true;
+                console.log('✅ Infinite Canvas initialized successfully');
+            }
+        }).catch(error => {
+            console.error('Failed to initialize canvas:', error);
+            // Start render loop anyway with fallback rendering
+            if (!this.renderLoopStarted) {
+                this.startRenderLoop();
+                this.renderLoopStarted = true;
+                console.log('⚠️ Infinite Canvas initialized with fallback rendering');
+            }
+        });
+    }
+    
+    async initializeMarkdownRenderer() {
+        try {
+            console.log('🔄 Attempting to load markdown renderer modules...');
+            
+            const rendererModule = await import('./markdownRenderer.js');
+            console.log('✅ Markdown renderer module loaded:', rendererModule);
+            
+            const parserModule = await import('./markdownParser.js');
+            console.log('✅ Markdown parser module loaded:', parserModule);
+            
+            const { MarkdownRenderer } = rendererModule;
+            const { parseMarkdown } = parserModule;
+            
+            if (!MarkdownRenderer || !parseMarkdown) {
+                throw new Error('Required classes/functions not found in modules');
+            }
+            
+            this.markdownRenderer = new MarkdownRenderer();
+            this.markdownRenderer.setTheme('dark');
+            this.parseMarkdown = parseMarkdown;
+            this._markdownErrorLogged = false; // Reset error flag since we're now initialized
+            
+            console.log('✅ Markdown renderer initialized successfully');
+        } catch (error) {
+            console.warn('Failed to initialize markdown renderer, using fallback:', error);
+            // Set fallback functions to prevent null reference errors
+            this.markdownRenderer = null;
+            this.parseMarkdown = null;
+        }
     }
     
     setupCanvas() {
@@ -48,19 +100,52 @@ export class InfiniteCanvas {
         this.canvas.height = rect.height;
         
         // Force re-render
-        this.render();
+        if (this.requestRender) {
+            this.requestRender();
+        } else {
+            this.render();
+        }
     }
     
     startRenderLoop() {
-        const render = () => {
-            this.render();
-            requestAnimationFrame(render);
+        // Start with an initial render
+        this.render();
+        console.log('🎨 Render loop started with on-demand rendering');
+    }
+    
+    setupRenderOnDemand() {
+        // Track if render is needed
+        this.needsRender = false;
+        this.renderScheduled = false;
+        
+        // Request render when needed
+        this.requestRender = () => {
+            if (!this.renderScheduled) {
+                this.renderScheduled = true;
+                requestAnimationFrame(() => {
+                    this.render();
+                    this.renderScheduled = false;
+                    this.needsRender = false;
+                });
+            }
         };
-        requestAnimationFrame(render);
+        
+        // Set up automatic render triggers
+        this.canvasState.onStateChange = () => this.requestRender();
+        
+        // Update InputHandler with render callback
+        if (this.inputHandler) {
+            this.inputHandler.setRenderCallback(this.requestRender);
+        }
     }
     
     render() {
-        this.renderer.render(this.ctx, this.canvas, this.canvasState, this.inputHandler);
+        try {
+            this.renderer.render(this.ctx, this.canvas, this.canvasState, this.inputHandler);
+        } catch (error) {
+            console.error('Render error:', error);
+            // Don't request more renders if there's an error
+        }
     }
 }
 
@@ -89,6 +174,7 @@ class CanvasState {
         
         const node = {
             id: `node_${++this.nodeCounter}`,
+            type: 'text',
             text: text,
             x: x,
             y: y,
@@ -106,6 +192,104 @@ class CanvasState {
         
         this.notifyStateChange();
         return node;
+    }
+    
+    createFileNode(filePath, x = 100, y = 100) {
+        console.log('📄 Creating file node:', { filePath, x, y });
+        
+        const node = {
+            id: `file_${++this.nodeCounter}`,
+            type: 'file',
+            file: filePath,
+            x: x,
+            y: y,
+            width: 400,
+            height: 400,
+            isSelected: false,
+            backgroundColor: '#2d2d2d',
+            textColor: '#cccccc',
+            borderColor: '#4a5568',
+            content: null,
+            isContentLoaded: false,
+            isEditing: false,
+            lastModified: null
+        };
+        
+        this.nodes.push(node);
+        this.loadFileContent(node);
+        console.log('📊 Total nodes now:', this.nodes.length);
+        
+        this.notifyStateChange();
+        return node;
+    }
+    
+    async loadFileContent(fileNode) {
+        try {
+            console.log('📖 Loading file content for:', fileNode.file);
+            
+            if (window.vsCodeAPI) {
+                window.vsCodeAPI.postMessage({
+                    type: 'loadFile',
+                    filePath: fileNode.file,
+                    nodeId: fileNode.id
+                });
+            }
+        } catch (error) {
+            console.error('❌ Error loading file content:', error);
+            fileNode.content = `Error loading file: ${fileNode.file}`;
+            fileNode.isContentLoaded = true;
+        }
+    }
+    
+    updateFileContent(nodeId, content, lastModified = null) {
+        const node = this.nodes.find(n => n.id === nodeId);
+        if (node && node.type === 'file') {
+            node.content = content;
+            node.isContentLoaded = true;
+            node.lastModified = lastModified;
+            console.log('📝 File content updated for:', node.file);
+        }
+    }
+    
+    async saveFileContent(fileNode, content) {
+        try {
+            console.log('💾 Saving file content for:', fileNode.file);
+            
+            if (window.vsCodeAPI) {
+                window.vsCodeAPI.postMessage({
+                    type: 'saveFile',
+                    filePath: fileNode.file,
+                    content: content,
+                    nodeId: fileNode.id
+                });
+            }
+            
+            fileNode.content = content;
+        } catch (error) {
+            console.error('❌ Error saving file content:', error);
+        }
+    }
+    
+    validateFileNodes() {
+        // Check all file nodes for broken links
+        this.nodes.filter(node => node.type === 'file').forEach(fileNode => {
+            if (!fileNode.isContentLoaded && fileNode.content === null) {
+                // File might be missing, try to reload
+                this.loadFileContent(fileNode);
+            }
+        });
+    }
+    
+    updateFilePath(nodeId, oldPath, newPath) {
+        const node = this.nodes.find(n => n.id === nodeId);
+        if (node && node.type === 'file') {
+            console.log('📝 Updating file path:', { oldPath, newPath });
+            node.file = newPath;
+            node.isContentLoaded = false;
+            node.content = null;
+            this.loadFileContent(node);
+            this.notifyStateChange();
+        }
     }
     
     deleteNode(node) {
@@ -185,15 +369,24 @@ class CanvasState {
     exportCanvasData() {
         // Export in Obsidian-compatible format
         return {
-            nodes: this.nodes.map(node => ({
-                id: node.id,
-                x: node.x,
-                y: node.y,
-                width: node.width,
-                height: node.height,
-                type: "text",
-                text: node.text
-            })),
+            nodes: this.nodes.map(node => {
+                const baseNode = {
+                    id: node.id,
+                    x: node.x,
+                    y: node.y,
+                    width: node.width,
+                    height: node.height,
+                    type: node.type || "text"
+                };
+                
+                if (node.type === 'file') {
+                    baseNode.file = node.file;
+                } else {
+                    baseNode.text = node.text;
+                }
+                
+                return baseNode;
+            }),
             edges: this.connections.map(conn => ({
                 id: conn.id,
                 fromNode: conn.from,
@@ -208,35 +401,57 @@ class CanvasState {
         try {
             if (!data) return;
             
-            // Reset state
+            // Preserve current viewport position
+            const currentOffsetX = this.offsetX;
+            const currentOffsetY = this.offsetY;
+            const currentScale = this.scale;
+            
+            // Reset content state (but preserve viewport)
             this.nodes = [];
             this.connections = [];
             this.nodeCounter = 0;
-            this.offsetX = 0;
-            this.offsetY = 0;
-            this.scale = 1;
+            
+            // Restore viewport position
+            this.offsetX = currentOffsetX;
+            this.offsetY = currentOffsetY;
+            this.scale = currentScale;
             
             console.log('📋 Loading Obsidian canvas format');
             
             // Load nodes
             if (data.nodes && Array.isArray(data.nodes)) {
                 data.nodes.forEach(nodeData => {
+                    const isFileNode = nodeData.type === 'file';
+                    
                     const node = {
                         id: nodeData.id,
-                        text: nodeData.text || 'New Node',
+                        type: nodeData.type || 'text',
                         x: nodeData.x || 100,
                         y: nodeData.y || 100,
-                        width: nodeData.width || 200,
-                        height: nodeData.height || 100,
+                        width: nodeData.width || (isFileNode ? 400 : 200),
+                        height: nodeData.height || (isFileNode ? 400 : 100),
                         isSelected: false,
-                        backgroundColor: '#3c3c3c',
+                        backgroundColor: isFileNode ? '#2d2d2d' : '#3c3c3c',
                         textColor: '#cccccc',
-                        borderColor: '#414141'
+                        borderColor: isFileNode ? '#4a5568' : '#414141'
                     };
+                    
+                    if (isFileNode) {
+                        node.file = nodeData.file;
+                        node.content = null;
+                        node.isContentLoaded = false;
+                        node.isEditing = false;
+                        node.lastModified = null;
+                        // Load file content after adding to nodes
+                        setTimeout(() => this.loadFileContent(node), 100);
+                    } else {
+                        node.text = nodeData.text || 'New Node';
+                    }
+                    
                     this.nodes.push(node);
                     
                     // Update counter to avoid ID conflicts
-                    const nodeNum = parseInt(node.id.replace('node_', ''));
+                    const nodeNum = parseInt(node.id.replace(/^(node_|file_)/, ''));
                     if (!isNaN(nodeNum) && nodeNum > this.nodeCounter) {
                         this.nodeCounter = nodeNum;
                     }
@@ -296,6 +511,7 @@ class InputHandler {
         this.draggedNode = null;
         this.lastMouseX = 0;
         this.lastMouseY = 0;
+        this.requestRender = null;
         this.dragStartX = 0;
         this.dragStartY = 0;
         this.hasMoved = false;
@@ -316,18 +532,36 @@ class InputHandler {
         this.canvas.addEventListener('mousedown', (e) => {
             console.log('🖱️ Mouse down:', e);
             this.handleMouseDown(e);
+            // Request render for mouse down interactions
+            if (this.requestRender) {
+                this.requestRender();
+            }
         });
         
-        this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+        this.canvas.addEventListener('mousemove', (e) => {
+            this.handleMouseMove(e);
+            // Request render for mouse interactions (hover effects, etc.)
+            if (this.requestRender) {
+                this.requestRender();
+            }
+        });
         
         this.canvas.addEventListener('mouseup', (e) => {
             console.log('🖱️ Mouse up:', e);
             this.handleMouseUp(e);
+            // Request render for mouse up interactions
+            if (this.requestRender) {
+                this.requestRender();
+            }
         });
         
         this.canvas.addEventListener('wheel', (e) => {
             console.log('🎡 Wheel:', e);
             this.handleWheel(e);
+            // Request render for wheel interactions
+            if (this.requestRender) {
+                this.requestRender();
+            }
         });
         
         this.canvas.addEventListener('dblclick', (e) => {
@@ -339,6 +573,17 @@ class InputHandler {
         document.addEventListener('keydown', (e) => {
             console.log('⌨️ Key down:', e.key);
             this.handleKeyDown(e);
+        });
+        
+        // Drag and drop events
+        this.canvas.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+        });
+        
+        this.canvas.addEventListener('drop', (e) => {
+            console.log('📁 Drop event detected!', e);
+            this.handleDrop(e);
         });
         
         console.log('✅ Event listeners set up successfully');
@@ -368,6 +613,15 @@ class InputHandler {
         }
         
         if (clickedNode) {
+            // Check if clicking on edit button for file nodes
+            if (clickedNode.type === 'file' && clickedNode._editButtonBounds && 
+                this.isPointInRect(canvasX, canvasY, clickedNode._editButtonBounds)) {
+                console.log('🔘 Edit button clicked during mouse down:', clickedNode.file);
+                this.editFileNodeSimple(clickedNode);
+                this.isDragging = false;
+                return;
+            }
+            
             // Check if clicking on a connection point (hold Shift to connect)
             const connectionPoint = this.getConnectionPointAt(clickedNode, canvasX, canvasY);
             
@@ -449,6 +703,11 @@ class InputHandler {
                 // Pan canvas
                 this.canvasState.offsetX += deltaX;
                 this.canvasState.offsetY += deltaY;
+                
+                // Request render for panning
+                if (this.requestRender) {
+                    this.requestRender();
+                }
             }
         }
         
@@ -521,6 +780,11 @@ class InputHandler {
         this.canvasState.offsetY -= (mouseY - this.canvasState.offsetY) * scaleDiff / this.canvasState.scale;
         
         this.canvasState.scale = newScale;
+        
+        // Request render for zoom
+        if (this.requestRender) {
+            this.requestRender();
+        }
     }
     
     handleDoubleClick(e) {
@@ -544,13 +808,29 @@ class InputHandler {
         console.log('📝 Clicked node:', clickedNode);
         
         if (clickedNode) {
-            console.log('✏️ Editing existing node');
-            this.editNodeText(clickedNode);
+            if (clickedNode.type === 'file') {
+                // Check if clicking on edit button
+                if (clickedNode._editButtonBounds && this.isPointInRect(canvasX, canvasY, clickedNode._editButtonBounds)) {
+                    console.log('🔘 Edit button clicked for:', clickedNode.file);
+                    this.editFileNodeSimple(clickedNode);
+                } else {
+                    console.log('📝 Double-click to edit file:', clickedNode.file);
+                    this.editFileNodeSimple(clickedNode);
+                }
+            } else {
+                console.log('✏️ Editing existing node');
+                this.editNodeText(clickedNode);
+            }
         } else {
             console.log('➕ Creating new node at:', { x: canvasX - 100, y: canvasY - 50 });
             const newNode = this.canvasState.createNode('New Node', canvasX - 100, canvasY - 50);
             console.log('🎉 New node created:', newNode);
         }
+    }
+    
+    isPointInRect(x, y, rect) {
+        return x >= rect.x && x <= rect.x + rect.width && 
+               y >= rect.y && y <= rect.y + rect.height;
     }
     
     handleKeyDown(e) {
@@ -628,6 +908,388 @@ class InputHandler {
         });
         
         input.addEventListener('blur', finishEditing);
+    }
+    
+    editFileNode(fileNode) {
+        console.log('📝 Starting file edit mode for:', fileNode.file);
+        
+        // Set editing state
+        fileNode.isEditing = true;
+        
+        // Create editor container
+        const editorContainer = document.createElement('div');
+        editorContainer.style.position = 'absolute';
+        editorContainer.style.left = (fileNode.x + 5) + 'px';
+        editorContainer.style.top = (fileNode.y + 45) + 'px';
+        editorContainer.style.width = (fileNode.width - 10) + 'px';
+        editorContainer.style.height = (fileNode.height - 50) + 'px';
+        editorContainer.style.zIndex = '1000';
+        editorContainer.style.backgroundColor = '#2d2d2d';
+        editorContainer.style.border = '2px solid #007fd4';
+        editorContainer.style.borderRadius = '4px';
+        editorContainer.className = 'markdown-editor-container';
+        
+        // No toolbar needed - keeping it simple
+        
+        // Add toolbar buttons
+        const toolbarButtons = [
+            { label: 'B', title: 'Bold', action: () => this.insertMarkdown(textarea, '**', '**') },
+            { label: 'I', title: 'Italic', action: () => this.insertMarkdown(textarea, '*', '*') },
+            { label: 'C', title: 'Code', action: () => this.insertMarkdown(textarea, '`', '`') },
+            { label: 'H1', title: 'Header 1', action: () => this.insertMarkdown(textarea, '# ', '') },
+            { label: 'H2', title: 'Header 2', action: () => this.insertMarkdown(textarea, '## ', '') },
+            { label: '•', title: 'List', action: () => this.insertMarkdown(textarea, '- ', '') },
+            { label: '>', title: 'Quote', action: () => this.insertMarkdown(textarea, '> ', '') },
+            { label: '---', title: 'Horizontal Rule', action: () => this.insertMarkdown(textarea, '\n---\n', '') }
+        ];
+        
+        toolbarButtons.forEach(btn => {
+            const button = document.createElement('button');
+            button.textContent = btn.label;
+            button.title = btn.title;
+            button.style.backgroundColor = '#4a4a4a';
+            button.style.color = '#cccccc';
+            button.style.border = '1px solid #666';
+            button.style.borderRadius = '3px';
+            button.style.padding = '4px 8px';
+            button.style.cursor = 'pointer';
+            button.style.fontSize = '11px';
+            button.style.fontWeight = btn.label.startsWith('H') ? 'bold' : 'normal';
+            
+            button.addEventListener('mouseenter', () => {
+                button.style.backgroundColor = '#555';
+            });
+            
+            button.addEventListener('mouseleave', () => {
+                button.style.backgroundColor = '#4a4a4a';
+            });
+            
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                btn.action();
+                textarea.focus();
+            });
+            
+            toolbar.appendChild(button);
+        });
+        
+        // Add save/cancel buttons
+        const separator = document.createElement('div');
+        separator.style.width = '1px';
+        separator.style.height = '20px';
+        separator.style.backgroundColor = '#666';
+        separator.style.margin = '0 8px';
+        toolbar.appendChild(separator);
+        
+        const saveBtn = document.createElement('button');
+        saveBtn.textContent = '💾 Save';
+        saveBtn.title = 'Save (Ctrl/Cmd+Enter)';
+        saveBtn.style.backgroundColor = '#0e7490';
+        saveBtn.style.color = 'white';
+        saveBtn.style.border = '1px solid #0891b2';
+        saveBtn.style.borderRadius = '3px';
+        saveBtn.style.padding = '4px 8px';
+        saveBtn.style.cursor = 'pointer';
+        saveBtn.style.fontSize = '11px';
+        
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = '❌ Cancel';
+        cancelBtn.title = 'Cancel (Escape)';
+        cancelBtn.style.backgroundColor = '#dc2626';
+        cancelBtn.style.color = 'white';
+        cancelBtn.style.border = '1px solid #ef4444';
+        cancelBtn.style.borderRadius = '3px';
+        cancelBtn.style.padding = '4px 8px';
+        cancelBtn.style.cursor = 'pointer';
+        cancelBtn.style.fontSize = '11px';
+        cancelBtn.style.marginLeft = '4px';
+        
+        toolbar.appendChild(saveBtn);
+        toolbar.appendChild(cancelBtn);
+        
+        // Create textarea
+        const textarea = document.createElement('textarea');
+        textarea.value = fileNode.content || '';
+        textarea.style.width = '100%';
+        textarea.style.height = '100%';
+        textarea.style.boxSizing = 'border-box';
+        textarea.style.border = 'none';
+        textarea.style.outline = 'none';
+        textarea.style.resize = 'none';
+        textarea.style.backgroundColor = '#2d2d2d';
+        textarea.style.color = '#cccccc';
+        textarea.style.padding = '12px';
+        textarea.style.fontSize = '12px';
+        textarea.style.fontFamily = 'Consolas, monospace';
+        textarea.style.lineHeight = '1.4';
+        textarea.placeholder = 'Enter markdown content...\n\nTip: Ctrl+Enter to save, Esc to cancel';
+        
+        // Assemble simple editor (no toolbar)
+        editorContainer.appendChild(textarea);
+        document.body.appendChild(editorContainer);
+        
+        // Focus and select
+        textarea.focus();
+        if (textarea.value) {
+            textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+        }
+        
+        const finishEditing = async () => {
+            const newContent = textarea.value;
+            fileNode.isEditing = false;
+            
+            // Save content
+            await this.canvasState.saveFileContent(fileNode, newContent);
+            
+            document.body.removeChild(editorContainer);
+            console.log('💾 File editing completed for:', fileNode.file);
+        };
+        
+        const cancelEditing = () => {
+            fileNode.isEditing = false;
+            document.body.removeChild(editorContainer);
+            console.log('❌ File editing cancelled for:', fileNode.file);
+        };
+        
+        // Simple keyboard-only controls
+        
+        textarea.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                cancelEditing();
+            } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                // Ctrl/Cmd + Enter to save
+                e.preventDefault();
+                finishEditing();
+            } else if (e.key === 'Tab') {
+                // Handle tab for indentation
+                e.preventDefault();
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                textarea.value = textarea.value.substring(0, start) + '  ' + textarea.value.substring(end);
+                textarea.selectionStart = textarea.selectionEnd = start + 2;
+            }
+        });
+        
+        // Close editor when clicking outside
+        document.addEventListener('click', function closeEditor(e) {
+            if (!editorContainer.contains(e.target)) {
+                document.removeEventListener('click', closeEditor);
+                finishEditing();
+            }
+        });
+    }
+    
+    // insertMarkdown function removed - simplified editor doesn't need it
+    
+    // New simplified editor function
+    editFileNodeSimple(fileNode) {
+        console.log('📝 Starting simple edit mode for:', fileNode.file);
+        
+        // Set editing state
+        fileNode.isEditing = true;
+        
+        // Create simple editor container
+        const editorContainer = document.createElement('div');
+        editorContainer.style.position = 'absolute';
+        editorContainer.style.left = (fileNode.x + 5) + 'px';
+        editorContainer.style.top = (fileNode.y + 45) + 'px';
+        editorContainer.style.width = (fileNode.width - 10) + 'px';
+        editorContainer.style.height = (fileNode.height - 50) + 'px';
+        editorContainer.style.zIndex = '1000';
+        editorContainer.style.backgroundColor = '#2d2d2d';
+        editorContainer.style.border = '2px solid #007fd4';
+        editorContainer.style.borderRadius = '4px';
+        editorContainer.className = 'markdown-editor-container';
+        
+        // Create simple textarea (no toolbar)
+        const textarea = document.createElement('textarea');
+        textarea.value = fileNode.content || '';
+        textarea.style.width = '100%';
+        textarea.style.height = '100%';
+        textarea.style.backgroundColor = '#1e1e1e';
+        textarea.style.color = '#cccccc';
+        textarea.style.border = 'none';
+        textarea.style.outline = 'none';
+        textarea.style.padding = '12px';
+        textarea.style.fontSize = '13px';
+        textarea.style.fontFamily = 'Consolas, monospace';
+        textarea.style.lineHeight = '1.4';
+        textarea.style.resize = 'none';
+        textarea.style.boxSizing = 'border-box';
+        textarea.placeholder = 'Enter markdown content...\n\nTip: Ctrl+Enter to save, Esc to cancel';
+        
+        // Add textarea to container
+        editorContainer.appendChild(textarea);
+        document.body.appendChild(editorContainer);
+        
+        // Focus and select
+        textarea.focus();
+        if (textarea.value) {
+            textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+        }
+        
+        const finishEditing = async () => {
+            const newContent = textarea.value;
+            fileNode.isEditing = false;
+            
+            // Save content
+            await this.canvasState.saveFileContent(fileNode, newContent);
+            
+            document.body.removeChild(editorContainer);
+            console.log('💾 File editing completed for:', fileNode.file);
+        };
+        
+        const cancelEditing = () => {
+            fileNode.isEditing = false;
+            document.body.removeChild(editorContainer);
+            console.log('❌ File editing cancelled for:', fileNode.file);
+        };
+        
+        // Simple keyboard shortcuts
+        textarea.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                cancelEditing();
+            } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                // Ctrl/Cmd + Enter to save
+                e.preventDefault();
+                finishEditing();
+            } else if (e.key === 'Tab') {
+                // Handle tab for indentation
+                e.preventDefault();
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                textarea.value = textarea.value.substring(0, start) + '  ' + textarea.value.substring(end);
+                textarea.selectionStart = textarea.selectionEnd = start + 2;
+            }
+        });
+        
+        // Close editor when clicking outside
+        document.addEventListener('click', function closeEditor(e) {
+            if (!editorContainer.contains(e.target)) {
+                document.removeEventListener('click', closeEditor);
+                finishEditing();
+            }
+        });
+    }
+    
+    handleDrop(e) {
+        e.preventDefault();
+        
+        const rect = this.canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        
+        // Convert to canvas coordinates
+        const canvasX = (mouseX - this.canvasState.offsetX) / this.canvasState.scale;
+        const canvasY = (mouseY - this.canvasState.offsetY) / this.canvasState.scale;
+        
+        console.log('📍 Drop position:', { canvasX, canvasY });
+        
+        // Handle VS Code drag and drop (from sidebar/explorer)
+        if (e.dataTransfer && e.dataTransfer.getData) {
+            // Try to get VS Code file data
+            const vsCodeData = e.dataTransfer.getData('text/plain');
+            console.log('📋 Drop data:', vsCodeData);
+            
+            if (vsCodeData) {
+                // Check if it's a file path
+                if (vsCodeData.endsWith('.md') || vsCodeData.includes('/')) {
+                    this.createFileNodeFromPath(vsCodeData, canvasX, canvasY);
+                    return;
+                }
+            }
+        }
+        
+        // Handle file drops from file system
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            const files = Array.from(e.dataTransfer.files);
+            console.log('📁 Dropped files:', files);
+            
+            files.forEach((file, index) => {
+                if (file.name.endsWith('.md') || file.type === 'text/markdown') {
+                    // For file system drops, we need to prompt for workspace-relative path
+                    this.promptForFileImport(file, canvasX + (index * 50), canvasY + (index * 50));
+                }
+            });
+        }
+    }
+    
+    createFileNodeFromPath(filePath, x, y) {
+        console.log('📄 Creating file node from path:', filePath);
+        
+        // Clean up the path (remove workspace prefix if present)
+        let relativePath = filePath;
+        if (filePath.startsWith('/')) {
+            // Convert absolute path to relative if possible
+            const pathParts = filePath.split('/');
+            relativePath = pathParts[pathParts.length - 1]; // Just use filename for now
+        }
+        
+        const fileNode = this.canvasState.createFileNode(relativePath, x, y);
+        console.log('✅ File node created:', fileNode.id);
+    }
+    
+    promptForFileImport(file, x, y) {
+        console.log('📥 Prompting for file import:', file.name);
+        
+        // Create a simple input overlay for the relative path
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = file.name;
+        input.placeholder = 'Enter workspace-relative path (e.g., docs/myfile.md)';
+        input.style.position = 'absolute';
+        input.style.left = x + 'px';
+        input.style.top = y + 'px';
+        input.style.zIndex = '1000';
+        input.style.backgroundColor = '#3c3c3c';
+        input.style.color = '#cccccc';
+        input.style.border = '2px solid #007fd4';
+        input.style.padding = '8px';
+        input.style.fontSize = '14px';
+        input.style.width = '300px';
+        
+        document.body.appendChild(input);
+        input.focus();
+        input.select();
+        
+        const finishImport = async () => {
+            const relativePath = input.value.trim();
+            if (relativePath) {
+                // Read file content and create file in workspace
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    const content = e.target.result;
+                    
+                    // Send file creation request to VS Code
+                    if (window.vsCodeAPI) {
+                        window.vsCodeAPI.postMessage({
+                            type: 'createFile',
+                            filePath: relativePath,
+                            content: content
+                        });
+                    }
+                    
+                    // Create file node
+                    this.createFileNodeFromPath(relativePath, x, y);
+                };
+                reader.readAsText(file);
+            }
+            document.body.removeChild(input);
+        };
+        
+        const cancelImport = () => {
+            document.body.removeChild(input);
+        };
+        
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                finishImport();
+            } else if (e.key === 'Escape') {
+                cancelImport();
+            }
+        });
+        
+        input.addEventListener('blur', finishImport);
     }
     
     // Connection point detection
@@ -712,6 +1374,11 @@ class InputHandler {
         
         return Math.sqrt((px - projX) * (px - projX) + (py - projY) * (py - projY));
     }
+    
+    setRenderCallback(callback) {
+        this.requestRender = callback;
+        console.log('🎨 Render callback set for InputHandler');
+    }
 }
 
 // Simplified Canvas Renderer
@@ -741,7 +1408,12 @@ class CanvasRenderer {
             const showConnectionPoints = node.isSelected || 
                 (inputHandler.hoveredNode === node && inputHandler.hoveredConnectionPoint) ||
                 inputHandler.isConnecting;
-            this.drawNode(ctx, node, showConnectionPoints, inputHandler);
+            
+            if (node.type === 'file') {
+                this.drawFileNode(ctx, node, showConnectionPoints, inputHandler);
+            } else {
+                this.drawNode(ctx, node, showConnectionPoints, inputHandler);
+            }
         });
         
         // Draw connection preview if connecting
@@ -837,6 +1509,231 @@ class CanvasRenderer {
         if (showConnectionPoints) {
             this.drawConnectionPoints(ctx, node, inputHandler);
         }
+    }
+    
+    drawFileNode(ctx, node, showConnectionPoints = false, inputHandler = null) {
+        // Draw file node background
+        ctx.fillStyle = node.backgroundColor;
+        ctx.fillRect(node.x, node.y, node.width, node.height);
+        
+        // Draw border with file-specific styling
+        ctx.strokeStyle = node.isSelected ? '#007fd4' : node.borderColor;
+        ctx.lineWidth = node.isSelected ? 3 : 2;
+        ctx.strokeRect(node.x, node.y, node.width, node.height);
+        
+        // Draw file header with filename
+        const headerHeight = 40;
+        ctx.fillStyle = '#1e1e1e';
+        ctx.fillRect(node.x, node.y, node.width, headerHeight);
+        
+        // File icon and name
+        ctx.fillStyle = '#f0f0f0';
+        ctx.font = 'bold 14px Segoe UI, sans-serif';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        
+        const fileName = node.file.split('/').pop() || node.file;
+        const fileIcon = fileName.endsWith('.md') ? '📄' : '📋';
+        
+        ctx.fillText(`${fileIcon} ${fileName}`, node.x + 12, node.y + headerHeight / 2);
+        
+        // Draw edit button
+        const editButtonX = node.x + node.width - 60;
+        const editButtonY = node.y + 8;
+        const editButtonWidth = 50;
+        const editButtonHeight = 24;
+        
+        // Edit button background
+        ctx.fillStyle = node.isEditing ? '#0e7490' : '#4a4a4a';
+        ctx.fillRect(editButtonX, editButtonY, editButtonWidth, editButtonHeight);
+        
+        // Edit button border
+        ctx.strokeStyle = node.isEditing ? '#0891b2' : '#666';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(editButtonX, editButtonY, editButtonWidth, editButtonHeight);
+        
+        // Edit button text
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '10px Segoe UI, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(node.isEditing ? 'Editing' : 'Edit', editButtonX + editButtonWidth / 2, editButtonY + editButtonHeight / 2 + 2);
+        
+        // Store edit button bounds for click detection
+        node._editButtonBounds = {
+            x: editButtonX,
+            y: editButtonY,
+            width: editButtonWidth,
+            height: editButtonHeight
+        };
+        
+        // Draw file path if different from name
+        if (node.file !== fileName) {
+            ctx.fillStyle = '#999999';
+            ctx.font = '11px Segoe UI, sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText(node.file, node.x + 12, node.y + headerHeight - 8);
+        }
+        
+        // Draw content area
+        const contentY = node.y + headerHeight;
+        const contentHeight = node.height - headerHeight;
+        
+        if (node.isEditing) {
+            // Draw editing indicator
+            ctx.fillStyle = '#264653';
+            ctx.fillRect(node.x, contentY, node.width, contentHeight);
+            
+            ctx.fillStyle = '#2a9d8f';
+            ctx.font = '16px Segoe UI, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('✏️ Editing...', node.x + node.width / 2, contentY + contentHeight / 2);
+        } else if (!node.isContentLoaded) {
+            // Draw loading indicator
+            ctx.fillStyle = '#3a3a3a';
+            ctx.fillRect(node.x, contentY, node.width, contentHeight);
+            
+            ctx.fillStyle = '#cccccc';
+            ctx.font = '14px Segoe UI, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('Loading...', node.x + node.width / 2, contentY + contentHeight / 2);
+        } else if (node.content) {
+            // Draw content preview
+            ctx.fillStyle = '#2d2d2d';
+            ctx.fillRect(node.x, contentY, node.width, contentHeight);
+            
+            this.drawMarkdownPreview(ctx, node.content, node.x + 10, contentY + 10, node.width - 20, contentHeight - 20);
+        } else {
+            // Draw error state
+            ctx.fillStyle = '#4a1e1e';
+            ctx.fillRect(node.x, contentY, node.width, contentHeight);
+            
+            ctx.fillStyle = '#ff6b6b';
+            ctx.font = '14px Segoe UI, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('⚠️ File not found', node.x + node.width / 2, contentY + contentHeight / 2);
+        }
+        
+        // Draw connection points if requested
+        if (showConnectionPoints) {
+            this.drawConnectionPoints(ctx, node, inputHandler);
+        }
+    }
+    
+    drawMarkdownPreview(ctx, content, x, y, maxWidth, maxHeight) {
+        try {
+            // Use the preloaded markdown renderer if available
+            if (this.markdownRenderer && this.parseMarkdown) {
+                const tokens = this.parseMarkdown(content);
+                return this.markdownRenderer.render(ctx, tokens, x, y, maxWidth, maxHeight);
+            } else {
+                // Fallback if renderer not yet loaded - do this silently to avoid spam
+                return this.renderSimpleMarkdownFallback(ctx, content, x, y, maxWidth, maxHeight);
+            }
+        } catch (error) {
+            // Only log once to avoid console spam
+            if (!this._markdownErrorLogged) {
+                console.warn('Failed to render markdown, using fallback preview:', error.message);
+                this._markdownErrorLogged = true;
+            }
+            return this.renderSimpleMarkdownFallback(ctx, content, x, y, maxWidth, maxHeight);
+        }
+    }
+    
+    renderSimpleMarkdownFallback(ctx, content, x, y, maxWidth, maxHeight) {
+        // Fallback to simple rendering
+        ctx.fillStyle = '#cccccc';
+        ctx.font = '12px Consolas, monospace';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        
+        const lines = content.split('\n');
+        const lineHeight = 16;
+        const maxLines = Math.floor(maxHeight / lineHeight);
+        const visibleLines = lines.slice(0, maxLines);
+        
+        let currentY = y;
+        
+        visibleLines.forEach((line) => {
+            if (currentY + lineHeight > y + maxHeight) return;
+            
+            // Simple markdown styling
+            let displayLine = line;
+            let textColor = '#cccccc';
+            let fontSize = '12px';
+            let fontWeight = 'normal';
+            
+            // Headers
+            if (line.startsWith('# ')) {
+                textColor = '#4fc3f7';
+                fontSize = '16px';
+                fontWeight = 'bold';
+                displayLine = line.substring(2);
+            } else if (line.startsWith('## ')) {
+                textColor = '#66bb6a';
+                fontSize = '14px';
+                fontWeight = 'bold';
+                displayLine = line.substring(3);
+            } else if (line.startsWith('### ')) {
+                textColor = '#ffb74d';
+                fontSize = '13px';
+                fontWeight = 'bold';
+                displayLine = line.substring(4);
+            } else if (line.startsWith('- ') || line.startsWith('* ')) {
+                textColor = '#ba68c8';
+                displayLine = '• ' + line.substring(2);
+            } else if (line.match(/^\d+\. /)) {
+                textColor = '#ba68c8';
+            }
+            
+            // Apply styling
+            ctx.fillStyle = textColor;
+            ctx.font = `${fontWeight} ${fontSize} Consolas, monospace`;
+            
+            // Truncate long lines
+            const truncatedLine = this.truncateText(ctx, displayLine, maxWidth - 10);
+            
+            ctx.fillText(truncatedLine, x, currentY);
+            currentY += lineHeight;
+        });
+        
+        // Show "..." if content is truncated
+        if (lines.length > maxLines) {
+            ctx.fillStyle = '#999999';
+            ctx.font = '12px Consolas, monospace';
+            ctx.fillText('...', x, currentY);
+        }
+        
+        return currentY - y;
+    }
+    
+    truncateText(ctx, text, maxWidth) {
+        const metrics = ctx.measureText(text);
+        if (metrics.width <= maxWidth) {
+            return text;
+        }
+        
+        // Binary search for the right length
+        let start = 0;
+        let end = text.length;
+        let result = text;
+        
+        while (start <= end) {
+            const mid = Math.floor((start + end) / 2);
+            const testText = text.substring(0, mid) + '...';
+            const testWidth = ctx.measureText(testText).width;
+            
+            if (testWidth <= maxWidth) {
+                result = testText;
+                start = mid + 1;
+            } else {
+                end = mid - 1;
+            }
+        }
+        
+        return result;
     }
     
     drawConnection(ctx, connection, nodes, isSelected = false) {
