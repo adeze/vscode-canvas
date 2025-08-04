@@ -702,12 +702,26 @@ class InputHandler {
         }
         
         if (clickedNode) {
-            // Check if clicking on resize handle
-            const resizeHandle = clickedNode._resizeHandles?.find(handle => 
+            // Check if clicking on a connection point first when Shift is held (priority for connections)
+            const connectionPoint = this.getConnectionPointAt(clickedNode, canvasX, canvasY);
+            
+            if (e.shiftKey && connectionPoint) {
+                // Start connection - this takes priority over resize when Shift is held
+                console.log('🔗 Starting connection from:', clickedNode.id, connectionPoint.side);
+                this.isConnecting = true;
+                this.connectionStart = clickedNode;
+                this.connectionStartPoint = connectionPoint;
+                this.canvasState.clearSelection();
+                this.isDragging = false;
+                return;
+            }
+            
+            // Check if clicking on resize handle (only if not connecting)
+            const resizeHandle = clickedNode._resizeHandles?.find(handle =>
                 canvasX >= handle.x && canvasX <= handle.x + handle.width &&
                 canvasY >= handle.y && canvasY <= handle.y + handle.height
             );
-            if (resizeHandle) {
+            if (resizeHandle && !e.shiftKey) {
                 console.log('🔧 Resize handle clicked:', clickedNode.id, resizeHandle.type);
                 this.isResizing = true;
                 this.resizeNode = clickedNode;
@@ -721,7 +735,7 @@ class InputHandler {
             }
             
             // Check if clicking on scrollbar
-            if (clickedNode._scrollbarBounds && 
+            if (clickedNode._scrollbarBounds &&
                 this.isPointInRect(canvasX, canvasY, clickedNode._scrollbarBounds)) {
                 console.log('📜 Scrollbar clicked:', clickedNode.id);
                 this.isDraggingScrollbar = true;
@@ -732,24 +746,10 @@ class InputHandler {
             }
             
             // Check if clicking on edit button for file nodes
-            if (clickedNode.type === 'file' && clickedNode._editButtonBounds && 
+            if (clickedNode.type === 'file' && clickedNode._editButtonBounds &&
                 this.isPointInRect(canvasX, canvasY, clickedNode._editButtonBounds)) {
                 console.log('🔘 Edit button clicked during mouse down:', clickedNode.file);
                 this.editFileNodeSimple(clickedNode);
-                this.isDragging = false;
-                return;
-            }
-            
-            // Check if clicking on a connection point (hold Shift to connect)
-            const connectionPoint = this.getConnectionPointAt(clickedNode, canvasX, canvasY);
-            
-            if (e.shiftKey && connectionPoint) {
-                // Start connection
-                console.log('🔗 Starting connection from:', clickedNode.id, connectionPoint.side);
-                this.isConnecting = true;
-                this.connectionStart = clickedNode;
-                this.connectionStartPoint = connectionPoint;
-                this.canvasState.clearSelection();
                 this.isDragging = false;
                 return;
             }
@@ -2783,6 +2783,117 @@ class UIManager {
         this.initializeDefaultModels();
         this.refreshModelsList();
         
+        // Controls Help section
+        const controlsSection = document.createElement('div');
+        controlsSection.style.cssText = `margin-bottom: 16px;`;
+        
+        const controlsLabel = document.createElement('label');
+        controlsLabel.textContent = '🎮 Canvas Controls:';
+        controlsLabel.style.cssText = `
+            display: block;
+            color: #d0d0d0;
+            font-size: 12px;
+            font-weight: 500;
+            margin-bottom: 6px;
+        `;
+        
+        // Controls container
+        const controlsContainer = document.createElement('div');
+        controlsContainer.style.cssText = `
+            background: rgba(30, 30, 30, 0.7);
+            border: 1px solid #555;
+            border-radius: 4px;
+            padding: 8px;
+            max-height: 180px;
+            overflow-y: auto;
+        `;
+        
+        // Create controls list
+        const controlsList = [
+            { category: 'Mouse Controls', items: [
+                { action: 'Double-click empty area', description: 'Create new node' },
+                { action: 'Double-click node', description: 'Edit node text' },
+                { action: 'Click + drag node', description: 'Move node' },
+                { action: 'Click + drag empty area', description: 'Pan canvas' },
+                { action: 'Mouse wheel', description: 'Zoom in/out' },
+                { action: 'Mouse wheel on node', description: 'Scroll node content' }
+            ]},
+            { category: 'Connections', items: [
+                { action: 'Shift + click green circle', description: 'Start connection' },
+                { action: 'Shift + drag to another node', description: 'Create connection' },
+                { action: 'Click connection line', description: 'Select connection' }
+            ]},
+            { category: 'Node Editing', items: [
+                { action: 'Click resize handles', description: 'Resize selected node' },
+                { action: 'Drag + drop .md files', description: 'Create file nodes' },
+                { action: 'Double-click file node', description: 'Edit file content' }
+            ]},
+            { category: 'Keyboard Shortcuts', items: [
+                { action: 'Delete/Backspace', description: 'Delete selected nodes/connections' },
+                { action: 'Escape', description: 'Cancel connection mode' },
+                { action: 'Ctrl/Cmd + Enter', description: 'Save text (in edit mode)' },
+                { action: 'Tab', description: 'Indent text (in edit mode)' }
+            ]}
+        ];
+        
+        controlsList.forEach(category => {
+            // Category header
+            const categoryHeader = document.createElement('div');
+            categoryHeader.textContent = category.category;
+            categoryHeader.style.cssText = `
+                color: #4fc3f7;
+                font-size: 11px;
+                font-weight: 600;
+                margin: 6px 0 4px 0;
+                border-bottom: 1px solid #444;
+                padding-bottom: 2px;
+            `;
+            if (category !== controlsList[0]) {
+                categoryHeader.style.marginTop = '10px';
+            }
+            controlsContainer.appendChild(categoryHeader);
+            
+            // Category items
+            category.items.forEach(item => {
+                const controlItem = document.createElement('div');
+                controlItem.style.cssText = `
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                    margin: 2px 0;
+                    padding: 2px 4px;
+                    border-radius: 2px;
+                    gap: 8px;
+                `;
+                
+                const actionSpan = document.createElement('span');
+                actionSpan.textContent = item.action;
+                actionSpan.style.cssText = `
+                    color: #ffb74d;
+                    font-size: 10px;
+                    font-weight: 500;
+                    white-space: nowrap;
+                    min-width: 120px;
+                `;
+                
+                const descriptionSpan = document.createElement('span');
+                descriptionSpan.textContent = item.description;
+                descriptionSpan.style.cssText = `
+                    color: #ccc;
+                    font-size: 10px;
+                    flex: 1;
+                    text-align: right;
+                `;
+                
+                controlItem.appendChild(actionSpan);
+                controlItem.appendChild(descriptionSpan);
+                controlsContainer.appendChild(controlItem);
+            });
+        });
+        
+        controlsSection.appendChild(controlsLabel);
+        controlsSection.appendChild(controlsContainer);
+        
         // Buttons section
         const buttonsSection = document.createElement('div');
         buttonsSection.style.cssText = `
@@ -2853,6 +2964,7 @@ class UIManager {
         configPanel.appendChild(baseUrlSection);
         configPanel.appendChild(apiKeySection);
         configPanel.appendChild(modelsSection);
+        configPanel.appendChild(controlsSection);
         configPanel.appendChild(buttonsSection);
         
         document.body.appendChild(configPanel);
