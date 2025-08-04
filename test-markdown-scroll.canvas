@@ -1,0 +1,30 @@
+{
+  "nodes": [
+    {
+      "id": "long-text-node",
+      "type": "text",
+      "text": "This is a regular text node with scrolling and resizing. You can mouse wheel over it to scroll, and when selected, drag the blue resize handles to change its size. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+      "x": 100,
+      "y": 100,
+      "width": 300,
+      "height": 150,
+      "maxHeight": 150,
+      "scrollY": 0
+    },
+    {
+      "id": "file-node-example",
+      "type": "file",
+      "file": "README.md",
+      "x": 500,
+      "y": 100,
+      "width": 400,
+      "height": 300,
+      "maxHeight": 300,
+      "scrollY": 0,
+      "content": "# Infinite Canvas VS Code Extension\n\nTransform the infinite canvas web application into a VS Code extension that can open and edit `.canvas` files. **Fully compatible with Obsidian canvas format.**\n\n## Project Overview\n\n**Goal**: Adapt the existing infinite canvas web app to work as a VS Code extension, allowing users to open and edit canvas files directly within VS Code.\n\n**Status**: ✅ Phase 2 Complete - Enhanced Extension with Markdown Support\n\n## Quick Start\n\n### Development Setup\n```bash\n# Install dependencies\nnpm install\n\n# Compile TypeScript  \nnpm run compile\n\n# Start development\n# 1. Open this project in VS Code\n# 2. Launch Extension Development Host:\n#    - Mac: Cmd+Shift+P → \"Debug: Start Debugging\"\n#    - Or: Run menu → Start Debugging\n#    - Or: Fn+F5 (if you have function keys)\n# 3. In new window, create a .canvas file\n# 4. Double-click to open with Infinite Canvas\n```\n\n### Basic Usage\n- **Double-click empty space**: Create new text node\n- **Double-click text node**: Edit text inline\n- **Double-click .md file node**: Edit markdown content\n- **Drag nodes**: Move around canvas\n- **Mouse wheel**: Zoom in/out\n- **Drag background**: Pan canvas\n- **Delete key**: Remove selected nodes\n- **Drag & drop files**: Create file nodes from workspace files\n\n### AI Features Usage\n- **Generate Ideas**: Select a node and click \"✨ Generate Ideas\" in the AI panel\n- **Configure Models**: Use checkboxes to enable/disable AI models\n- **API Setup**: Add your Groq API key in VS Code settings (optional - works with mock responses)\n- **Connect Nodes**: Hold Shift and drag from connection points to create relationships",
+      "isContentLoaded": true,
+      "isEditing": false
+    }
+  ],
+  "edges": []
+}

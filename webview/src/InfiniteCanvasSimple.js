@@ -215,8 +215,10 @@ class CanvasState {
             text: text,
             x: x,
             y: y,
-            width: 200,
-            height: 100,
+            width: 250,  // Default width
+            height: 120, // Default height
+            maxHeight: 120, // Fixed height for scrolling
+            scrollY: 0,  // Vertical scroll offset
             isSelected: false,
             backgroundColor: '#3c3c3c',
             textColor: '#cccccc',
@@ -242,6 +244,8 @@ class CanvasState {
             y: y,
             width: 400,
             height: 400,
+            maxHeight: 400, // Fixed height for scrolling
+            scrollY: 0,     // Vertical scroll offset
             isSelected: false,
             backgroundColor: '#2d2d2d',
             textColor: '#cccccc',
@@ -474,8 +478,10 @@ class CanvasState {
                         type: nodeData.type || 'text',
                         x: nodeData.x || 100,
                         y: nodeData.y || 100,
-                        width: nodeData.width || (isFileNode ? 400 : 200),
-                        height: nodeData.height || (isFileNode ? 400 : 100),
+                        width: nodeData.width || (isFileNode ? 400 : 250),
+                        height: nodeData.height || (isFileNode ? 400 : 120),
+                        maxHeight: nodeData.maxHeight || (isFileNode ? 400 : 120),
+                        scrollY: nodeData.scrollY || 0,
                         isSelected: false,
                         backgroundColor: isFileNode ? '#2d2d2d' : '#3c3c3c',
                         textColor: '#cccccc',
@@ -565,6 +571,20 @@ class InputHandler {
         // Connection functionality
         this.isConnecting = false;
         this.connectionStart = null;
+        
+        // Scrollbar functionality
+        this.isDraggingScrollbar = false;
+        this.scrollbarDragNode = null;
+        this.scrollbarDragStartY = 0;
+        
+        // Resize functionality
+        this.isResizing = false;
+        this.resizeNode = null;
+        this.resizeHandle = null;
+        this.resizeStartX = 0;
+        this.resizeStartY = 0;
+        this.resizeStartWidth = 0;
+        this.resizeStartHeight = 0;
         this.connectionStartPoint = null;
         this.hoveredNode = null;
         this.hoveredConnectionPoint = null;
@@ -659,6 +679,35 @@ class InputHandler {
         }
         
         if (clickedNode) {
+            // Check if clicking on resize handle
+            const resizeHandle = clickedNode._resizeHandles?.find(handle => 
+                canvasX >= handle.x && canvasX <= handle.x + handle.width &&
+                canvasY >= handle.y && canvasY <= handle.y + handle.height
+            );
+            if (resizeHandle) {
+                console.log('🔧 Resize handle clicked:', clickedNode.id, resizeHandle.type);
+                this.isResizing = true;
+                this.resizeNode = clickedNode;
+                this.resizeHandle = resizeHandle;
+                this.resizeStartX = canvasX;
+                this.resizeStartY = canvasY;
+                this.resizeStartWidth = clickedNode.width;
+                this.resizeStartHeight = clickedNode.height;
+                this.isDragging = false;
+                return;
+            }
+            
+            // Check if clicking on scrollbar
+            if (clickedNode._scrollbarBounds && 
+                this.isPointInRect(canvasX, canvasY, clickedNode._scrollbarBounds)) {
+                console.log('📜 Scrollbar clicked:', clickedNode.id);
+                this.isDraggingScrollbar = true;
+                this.scrollbarDragNode = clickedNode;
+                this.scrollbarDragStartY = canvasY - clickedNode._scrollbarBounds.thumbY;
+                this.isDragging = false;
+                return;
+            }
+            
             // Check if clicking on edit button for file nodes
             if (clickedNode.type === 'file' && clickedNode._editButtonBounds && 
                 this.isPointInRect(canvasX, canvasY, clickedNode._editButtonBounds)) {
@@ -720,17 +769,116 @@ class InputHandler {
         }
         
         // Update cursor based on hover state
-        if (this.isConnecting) {
+        if (this.isResizing) {
+            this.canvas.style.cursor = this.resizeHandle.cursor;
+        } else if (this.isDraggingScrollbar) {
+            this.canvas.style.cursor = 'grabbing';
+        } else if (this.isConnecting) {
             this.canvas.style.cursor = 'crosshair';
         } else if (this.hoveredConnectionPoint && e.shiftKey) {
             this.canvas.style.cursor = 'copy';
         } else if (this.hoveredNode) {
-            this.canvas.style.cursor = 'grab';
+            // Check for resize handle hover
+            const resizeHandle = this.hoveredNode._resizeHandles?.find(handle => 
+                canvasX >= handle.x && canvasX <= handle.x + handle.width &&
+                canvasY >= handle.y && canvasY <= handle.y + handle.height
+            );
+            if (resizeHandle) {
+                this.canvas.style.cursor = resizeHandle.cursor;
+            } else if (this.hoveredNode._scrollbarBounds && 
+                       this.isPointInRect(canvasX, canvasY, this.hoveredNode._scrollbarBounds)) {
+                this.canvas.style.cursor = 'grab';
+            } else {
+                this.canvas.style.cursor = 'grab';
+            }
         } else {
             this.canvas.style.cursor = 'default';
         }
         
-        if (this.isDragging) {
+        if (this.isResizing && this.resizeNode && this.resizeHandle) {
+            // Handle node resizing
+            const deltaX = canvasX - this.resizeStartX;
+            const deltaY = canvasY - this.resizeStartY;
+            const node = this.resizeNode;
+            const handle = this.resizeHandle;
+            
+            // Minimum size constraints
+            const minWidth = 100;
+            const minHeight = 60;
+            
+            // Calculate new dimensions based on resize handle type
+            let newWidth = this.resizeStartWidth;
+            let newHeight = this.resizeStartHeight;
+            let newX = node.x;
+            let newY = node.y;
+            
+            switch (handle.type) {
+                case 'se': // Southeast (bottom-right)
+                    newWidth = Math.max(minWidth, this.resizeStartWidth + deltaX);
+                    newHeight = Math.max(minHeight, this.resizeStartHeight + deltaY);
+                    break;
+                case 'sw': // Southwest (bottom-left)
+                    newWidth = Math.max(minWidth, this.resizeStartWidth - deltaX);
+                    newHeight = Math.max(minHeight, this.resizeStartHeight + deltaY);
+                    newX = node.x + (this.resizeStartWidth - newWidth);
+                    break;
+                case 'ne': // Northeast (top-right)
+                    newWidth = Math.max(minWidth, this.resizeStartWidth + deltaX);
+                    newHeight = Math.max(minHeight, this.resizeStartHeight - deltaY);
+                    newY = node.y + (this.resizeStartHeight - newHeight);
+                    break;
+                case 'nw': // Northwest (top-left)
+                    newWidth = Math.max(minWidth, this.resizeStartWidth - deltaX);
+                    newHeight = Math.max(minHeight, this.resizeStartHeight - deltaY);
+                    newX = node.x + (this.resizeStartWidth - newWidth);
+                    newY = node.y + (this.resizeStartHeight - newHeight);
+                    break;
+                case 'e': // East (right edge)
+                    newWidth = Math.max(minWidth, this.resizeStartWidth + deltaX);
+                    break;
+                case 'w': // West (left edge)
+                    newWidth = Math.max(minWidth, this.resizeStartWidth - deltaX);
+                    newX = node.x + (this.resizeStartWidth - newWidth);
+                    break;
+                case 's': // South (bottom edge)
+                    newHeight = Math.max(minHeight, this.resizeStartHeight + deltaY);
+                    break;
+                case 'n': // North (top edge)
+                    newHeight = Math.max(minHeight, this.resizeStartHeight - deltaY);
+                    newY = node.y + (this.resizeStartHeight - newHeight);
+                    break;
+            }
+            
+            // Apply the new dimensions
+            node.x = newX;
+            node.y = newY;
+            node.width = newWidth;
+            node.height = newHeight;
+            
+            // Update maxHeight for scrolling (keep aspect or use new height)
+            if (node.maxHeight) {
+                node.maxHeight = newHeight;
+            }
+            
+            console.log('🔧 Resizing node:', node.id, 'to', newWidth + 'x' + newHeight);
+        } else if (this.isDraggingScrollbar && this.scrollbarDragNode) {
+            // Handle scrollbar dragging
+            const node = this.scrollbarDragNode;
+            const thumbY = canvasY - this.scrollbarDragStartY;
+            const scrollbarBounds = node._scrollbarBounds;
+            
+            if (scrollbarBounds) {
+                const relativeThumbY = thumbY - scrollbarBounds.y;
+                const maxThumbY = scrollbarBounds.height - scrollbarBounds.thumbHeight;
+                const clampedThumbY = Math.max(0, Math.min(relativeThumbY, maxThumbY));
+                
+                // Calculate scroll position from thumb position
+                const scrollRatio = maxThumbY > 0 ? clampedThumbY / maxThumbY : 0;
+                node.scrollY = scrollRatio * node._maxScroll;
+                
+                console.log('📜 Dragging scrollbar:', node.id, 'scrollY:', node.scrollY);
+            }
+        } else if (this.isDragging) {
             const deltaX = mouseX - this.lastMouseX;
             const deltaY = mouseY - this.lastMouseY;
             
@@ -765,7 +913,29 @@ class InputHandler {
     }
     
     handleMouseUp(e) {
-        console.log('🖱️ Mouse up - was dragging:', this.isDragging, 'was node dragging:', this.isNodeDragging, 'was connecting:', this.isConnecting);
+        console.log('🖱️ Mouse up - was dragging:', this.isDragging, 'was node dragging:', this.isNodeDragging, 'was connecting:', this.isConnecting, 'was scrollbar dragging:', this.isDraggingScrollbar);
+        
+        // Handle resize completion
+        if (this.isResizing) {
+            console.log('🔧 Resize ended');
+            this.isResizing = false;
+            this.resizeNode = null;
+            this.resizeHandle = null;
+            this.resizeStartX = 0;
+            this.resizeStartY = 0;
+            this.resizeStartWidth = 0;
+            this.resizeStartHeight = 0;
+            return;
+        }
+        
+        // Handle scrollbar dragging release
+        if (this.isDraggingScrollbar) {
+            console.log('📜 Scrollbar drag ended');
+            this.isDraggingScrollbar = false;
+            this.scrollbarDragNode = null;
+            this.scrollbarDragStartY = 0;
+            return;
+        }
         
         // Handle connection completion
         if (this.isConnecting && this.connectionStart) {
@@ -819,7 +989,27 @@ class InputHandler {
         const mouseX = e.clientX - rect.left;
         const mouseY = e.clientY - rect.top;
         
-        // Zoom factor
+        // Convert to canvas coordinates
+        const canvasX = (mouseX - this.canvasState.offsetX) / this.canvasState.scale;
+        const canvasY = (mouseY - this.canvasState.offsetY) / this.canvasState.scale;
+        
+        // Check if mouse is over a node with scrollable content
+        const hoveredNode = this.canvasState.getNodeAt(canvasX, canvasY);
+        
+        if (hoveredNode && hoveredNode._maxScroll > 0) {
+            // Scroll the node content
+            const scrollDelta = e.deltaY * 0.5; // Adjust scroll sensitivity
+            hoveredNode.scrollY = Math.max(0, Math.min(hoveredNode.scrollY + scrollDelta, hoveredNode._maxScroll));
+            console.log('📜 Scrolling node:', hoveredNode.id, 'scrollY:', hoveredNode.scrollY, 'maxScroll:', hoveredNode._maxScroll);
+            
+            // Request render for scroll
+            if (this.requestRender) {
+                this.requestRender();
+            }
+            return; // Don't zoom when scrolling node content
+        }
+        
+        // Default canvas zoom behavior
         const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
         const newScale = Math.max(0.1, Math.min(5, this.canvasState.scale * zoomFactor));
         
@@ -1518,6 +1708,11 @@ class CanvasRenderer {
     }
     
     drawNode(ctx, node, showConnectionPoints = false, inputHandler = null) {
+        // Ensure scrollY is defined
+        if (node.scrollY === undefined) {
+            node.scrollY = 0;
+        }
+        
         // Draw background
         ctx.fillStyle = node.backgroundColor;
         ctx.fillRect(node.x, node.y, node.width, node.height);
@@ -1527,22 +1722,29 @@ class CanvasRenderer {
         ctx.lineWidth = node.isSelected ? 2 : 1;
         ctx.strokeRect(node.x, node.y, node.width, node.height);
         
-        // Draw text
+        // Set up clipping region for text content
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(node.x + 2, node.y + 2, node.width - 4, node.height - 4);
+        ctx.clip();
+        
+        // Draw text with scrolling
         ctx.fillStyle = node.textColor;
         ctx.font = '14px Segoe UI, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
         
-        // Wrap text
+        // Wrap text into lines
         const words = node.text.split(' ');
         const lines = [];
-        let currentLine = words[0];
+        let currentLine = words[0] || '';
         
         for (let i = 1; i < words.length; i++) {
             const word = words[i];
-            const width = ctx.measureText(currentLine + ' ' + word).width;
+            const testLine = currentLine + ' ' + word;
+            const width = ctx.measureText(testLine).width;
             if (width < node.width - 20) {
-                currentLine += ' ' + word;
+                currentLine = testLine;
             } else {
                 lines.push(currentLine);
                 currentLine = word;
@@ -1550,22 +1752,121 @@ class CanvasRenderer {
         }
         lines.push(currentLine);
         
-        // Draw lines
+        // Calculate total content height
         const lineHeight = 18;
-        const startY = node.y + node.height / 2 - (lines.length - 1) * lineHeight / 2;
+        const padding = 10;
+        const totalContentHeight = lines.length * lineHeight + padding * 2;
+        
+        // Store content dimensions for scrolling
+        node._contentHeight = totalContentHeight;
+        node._maxScroll = Math.max(0, totalContentHeight - node.height);
+        
+        // Clamp scroll position
+        node.scrollY = Math.max(0, Math.min(node.scrollY, node._maxScroll));
+        
+        // Draw lines with scroll offset
+        const startY = node.y + padding - node.scrollY;
         
         lines.forEach((line, index) => {
-            ctx.fillText(
-                line,
-                node.x + node.width / 2,
-                startY + index * lineHeight
-            );
+            const lineY = startY + index * lineHeight;
+            // Only draw lines that are visible in the viewport
+            if (lineY + lineHeight >= node.y && lineY <= node.y + node.height) {
+                ctx.fillText(
+                    line,
+                    node.x + 10,
+                    lineY
+                );
+            }
         });
+        
+        ctx.restore();
+        
+        // Draw scrollbar if content overflows
+        if (node._maxScroll > 0) {
+            this.drawScrollbar(ctx, node);
+        }
         
         // Draw connection points if requested
         if (showConnectionPoints) {
             this.drawConnectionPoints(ctx, node, inputHandler);
         }
+        
+        // Draw resize handles if node is selected
+        if (node.isSelected) {
+            this.drawResizeHandles(ctx, node);
+        }
+    }
+    
+    drawScrollbar(ctx, node) {
+        if (!node._maxScroll || node._maxScroll <= 0) return;
+        
+        const scrollbarWidth = 8;
+        const scrollbarX = node.x + node.width - scrollbarWidth - 2;
+        const scrollbarY = node.y + 2;
+        const scrollbarHeight = node.height - 4;
+        
+        // Draw scrollbar track
+        ctx.fillStyle = '#2a2a2a';
+        ctx.fillRect(scrollbarX, scrollbarY, scrollbarWidth, scrollbarHeight);
+        
+        // Calculate thumb position and size
+        const contentRatio = node.height / node._contentHeight;
+        const thumbHeight = Math.max(20, scrollbarHeight * contentRatio);
+        const scrollRatio = node.scrollY / node._maxScroll;
+        const thumbY = scrollbarY + (scrollbarHeight - thumbHeight) * scrollRatio;
+        
+        // Draw scrollbar thumb
+        ctx.fillStyle = node.isSelected ? '#007fd4' : '#666';
+        ctx.fillRect(scrollbarX + 1, thumbY, scrollbarWidth - 2, thumbHeight);
+        
+        // Store scrollbar bounds for interaction
+        node._scrollbarBounds = {
+            x: scrollbarX,
+            y: scrollbarY,
+            width: scrollbarWidth,
+            height: scrollbarHeight,
+            thumbY: thumbY,
+            thumbHeight: thumbHeight
+        };
+    }
+    
+    drawResizeHandles(ctx, node) {
+        const handleSize = 8;
+        const handleColor = '#007fd4';
+        const handleBorderColor = '#ffffff';
+        
+        // Define resize handle positions
+        const handles = [
+            // Corners
+            { x: node.x - handleSize/2, y: node.y - handleSize/2, cursor: 'nw-resize', type: 'nw' },
+            { x: node.x + node.width - handleSize/2, y: node.y - handleSize/2, cursor: 'ne-resize', type: 'ne' },
+            { x: node.x - handleSize/2, y: node.y + node.height - handleSize/2, cursor: 'sw-resize', type: 'sw' },
+            { x: node.x + node.width - handleSize/2, y: node.y + node.height - handleSize/2, cursor: 'se-resize', type: 'se' },
+            // Edges
+            { x: node.x + node.width/2 - handleSize/2, y: node.y - handleSize/2, cursor: 'n-resize', type: 'n' },
+            { x: node.x + node.width/2 - handleSize/2, y: node.y + node.height - handleSize/2, cursor: 's-resize', type: 's' },
+            { x: node.x - handleSize/2, y: node.y + node.height/2 - handleSize/2, cursor: 'w-resize', type: 'w' },
+            { x: node.x + node.width - handleSize/2, y: node.y + node.height/2 - handleSize/2, cursor: 'e-resize', type: 'e' }
+        ];
+        
+        // Store handle bounds for interaction
+        node._resizeHandles = handles.map(handle => ({
+            ...handle,
+            width: handleSize,
+            height: handleSize
+        }));
+        
+        // Draw handles
+        handles.forEach(handle => {
+            // Draw handle background
+            ctx.fillStyle = handleColor;
+            ctx.fillRect(handle.x, handle.y, handleSize, handleSize);
+            
+            // Draw handle border
+            ctx.strokeStyle = handleBorderColor;
+            ctx.lineWidth = 1;
+            ctx.strokeRect(handle.x, handle.y, handleSize, handleSize);
+        });
     }
     
     drawFileNode(ctx, node, showConnectionPoints = false, inputHandler = null) {
@@ -1631,9 +1932,20 @@ class CanvasRenderer {
             ctx.fillText(node.file, node.x + 12, node.y + headerHeight - 8);
         }
         
-        // Draw content area
+        // Draw content area with scrolling support
         const contentY = node.y + headerHeight;
         const contentHeight = node.height - headerHeight;
+        
+        // Ensure scrollY is defined for file nodes
+        if (node.scrollY === undefined) {
+            node.scrollY = 0;
+        }
+        
+        // Set up clipping region for content area
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(node.x + 2, contentY + 2, node.width - 4, contentHeight - 4);
+        ctx.clip();
         
         if (node.isEditing) {
             // Draw editing indicator
@@ -1656,11 +1968,30 @@ class CanvasRenderer {
             ctx.textBaseline = 'middle';
             ctx.fillText('Loading...', node.x + node.width / 2, contentY + contentHeight / 2);
         } else if (node.content) {
-            // Draw content preview
+            // Draw content preview with scrolling
             ctx.fillStyle = '#2d2d2d';
             ctx.fillRect(node.x, contentY, node.width, contentHeight);
             
-            this.drawMarkdownPreview(ctx, node.content, node.x + 10, contentY + 10, node.width - 20, contentHeight - 20);
+            // Calculate content dimensions for scrolling
+            const padding = 10;
+            const contentStartY = contentY + padding - node.scrollY;
+            
+            // Draw the markdown content with scroll offset
+            const actualContentHeight = this.drawMarkdownPreview(
+                ctx, 
+                node.content, 
+                node.x + padding, 
+                contentStartY, 
+                node.width - padding * 2, 
+                contentHeight + node.scrollY // Extend available height for scrolled content
+            );
+            
+            // Store content dimensions for scrolling
+            node._contentHeight = actualContentHeight + padding * 2;
+            node._maxScroll = Math.max(0, node._contentHeight - contentHeight);
+            
+            // Clamp scroll position
+            node.scrollY = Math.max(0, Math.min(node.scrollY, node._maxScroll));
         } else {
             // Draw error state
             ctx.fillStyle = '#4a1e1e';
@@ -1673,10 +2004,57 @@ class CanvasRenderer {
             ctx.fillText('⚠️ File not found', node.x + node.width / 2, contentY + contentHeight / 2);
         }
         
+        ctx.restore();
+        
+        // Draw scrollbar for file content if needed
+        if (node._maxScroll > 0) {
+            this.drawFileScrollbar(ctx, node, headerHeight);
+        }
+        
         // Draw connection points if requested
         if (showConnectionPoints) {
             this.drawConnectionPoints(ctx, node, inputHandler);
         }
+        
+        // Draw resize handles if node is selected
+        if (node.isSelected) {
+            this.drawResizeHandles(ctx, node);
+        }
+    }
+    
+    drawFileScrollbar(ctx, node, headerHeight) {
+        if (!node._maxScroll || node._maxScroll <= 0) return;
+        
+        const scrollbarWidth = 8;
+        const contentY = node.y + headerHeight;
+        const contentHeight = node.height - headerHeight;
+        const scrollbarX = node.x + node.width - scrollbarWidth - 2;
+        const scrollbarY = contentY + 2;
+        const scrollbarHeight = contentHeight - 4;
+        
+        // Draw scrollbar track
+        ctx.fillStyle = '#2a2a2a';
+        ctx.fillRect(scrollbarX, scrollbarY, scrollbarWidth, scrollbarHeight);
+        
+        // Calculate thumb position and size
+        const contentRatio = contentHeight / node._contentHeight;
+        const thumbHeight = Math.max(20, scrollbarHeight * contentRatio);
+        const scrollRatio = node.scrollY / node._maxScroll;
+        const thumbY = scrollbarY + (scrollbarHeight - thumbHeight) * scrollRatio;
+        
+        // Draw scrollbar thumb
+        ctx.fillStyle = node.isSelected ? '#007fd4' : '#666';
+        ctx.fillRect(scrollbarX + 1, thumbY, scrollbarWidth - 2, thumbHeight);
+        
+        // Store scrollbar bounds for interaction (reuse existing logic)
+        node._scrollbarBounds = {
+            x: scrollbarX,
+            y: scrollbarY,
+            width: scrollbarWidth,
+            height: scrollbarHeight,
+            thumbY: thumbY,
+            thumbHeight: thumbHeight
+        };
     }
     
     drawMarkdownPreview(ctx, content, x, y, maxWidth, maxHeight) {

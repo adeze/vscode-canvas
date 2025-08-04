@@ -1,0 +1,38 @@
+{
+  "nodes": [
+    {
+      "id": "test-scroll-node",
+      "type": "text",
+      "text": "This is a test node with a lot of text content that should overflow and require scrolling. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium.",
+      "x": 100,
+      "y": 100,
+      "width": 250,
+      "height": 120,
+      "maxHeight": 120,
+      "scrollY": 0
+    },
+    {
+      "id": "normal-node", 
+      "type": "text",
+      "text": "Short text - try resizing me!",
+      "x": 400,
+      "y": 100,
+      "width": 250,
+      "height": 120,
+      "maxHeight": 120,
+      "scrollY": 0
+    },
+    {
+      "id": "very-long-text-node",
+      "type": "text", 
+      "text": "This node has extremely long text content that will definitely overflow the default size and demonstrate both scrolling and resizing capabilities. You can scroll through this content with the mouse wheel, and you can resize the node by dragging the resize handles that appear on the borders when the node is selected. The resize handles appear as small blue squares on the corners and edges of selected nodes. Try clicking on this node to select it, then look for the resize handles. You can drag them to make the node larger or smaller. The minimum size is enforced to prevent nodes from becoming too small to be useful. When you resize a node, the scrollable content area adjusts automatically. This demonstrates the combination of both features working together seamlessly.",
+      "x": 100,
+      "y": 300,
+      "width": 300,
+      "height": 150,
+      "maxHeight": 150,
+      "scrollY": 0
+    }
+  ],
+  "edges": []
+}
