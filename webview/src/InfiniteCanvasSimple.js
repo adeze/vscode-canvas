@@ -1807,6 +1807,11 @@ class CanvasRenderer {
         ctx.lineWidth = node.isSelected ? 2 : 1;
         ctx.strokeRect(node.x, node.y, node.width, node.height);
         
+        // Draw AI model badge if node was created by AI
+        if (node.aiModel) {
+            this.drawAIModelBadge(ctx, node);
+        }
+        
         // Set up clipping region for text content
         ctx.save();
         ctx.beginPath();
@@ -1882,6 +1887,42 @@ class CanvasRenderer {
         }
     }
     
+    drawAIModelBadge(ctx, node) {
+        if (!node.aiModel) return;
+        
+        // Use the full model name as stored from AI generation
+        const modelName = node.aiModel;
+        
+        // Measure text to size badge
+        ctx.save();
+        ctx.font = '9px Segoe UI, sans-serif';
+        const textWidth = ctx.measureText(`🤖 ${modelName}`).width;
+        
+        // Badge dimensions
+        const badgeWidth = textWidth + 12;
+        const badgeHeight = 16;
+        const badgeX = node.x + node.width - badgeWidth - 8;
+        const badgeY = node.y - badgeHeight - 4;
+        
+        // Draw badge background with rounded corners effect
+        ctx.fillStyle = 'rgba(79, 195, 247, 0.9)'; // Light blue with transparency
+        ctx.fillRect(badgeX, badgeY, badgeWidth, badgeHeight);
+        
+        // Draw badge border
+        ctx.strokeStyle = '#29b6f6';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(badgeX, badgeY, badgeWidth, badgeHeight);
+        
+        // Draw badge text
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '9px Segoe UI, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`🤖 ${modelName}`, badgeX + badgeWidth / 2, badgeY + badgeHeight / 2);
+        
+        ctx.restore();
+    }
+
     drawScrollbar(ctx, node) {
         if (!node._maxScroll || node._maxScroll <= 0) return;
         
@@ -1968,6 +2009,11 @@ class CanvasRenderer {
         const headerHeight = 40;
         ctx.fillStyle = '#1e1e1e';
         ctx.fillRect(node.x, node.y, node.width, headerHeight);
+        
+        // Draw AI model badge if node was created by AI
+        if (node.aiModel) {
+            this.drawAIModelBadge(ctx, node);
+        }
         
         // File icon and name
         ctx.fillStyle = '#f0f0f0';
@@ -2856,6 +2902,7 @@ class UIManager {
     initializeDefaultModels() {
         const existing = this.getStoredModels();
         if (!existing) {
+            // Use the same default models as AIManager - single source of truth
             const defaultModels = [
                 'google/gemini-2.5-flash',
                 'qwen/qwen3-235b-a22b-thinking-2507',

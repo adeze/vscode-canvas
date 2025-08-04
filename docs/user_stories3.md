@@ -20,4 +20,11 @@ bug is see:
 
 
     given that the generated nodes are created below, the conector arrow should be from the bottom not the rigth side, of the current node, fix that 
+
+
+
+
+
+    now we connect nodes , we send the conected nodes content also to the ai, but only his parents and parents of parents and so on , like on the web version, 
         
+    now i should see from which ai model output is the node created, so for this we put a simple tooltip or text on the top of the node created, saying his model created, like on the web version 

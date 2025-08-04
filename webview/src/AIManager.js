@@ -8,16 +8,23 @@ export class AIManager {
         
         // AI configuration - using OpenRouter
         this.demoMode = false; // API key required for AI functionality
-        this.openRouterModels = 'anthropic/claude-3.5-sonnet,openai/gpt-4o,meta-llama/llama-3.1-8b-instruct';
-        this.aiModels = this.openRouterModels;
+        
+        // Read models from UI panel's localStorage - single source of truth
+        this.aiModels = this.getModelsFromUIPanel();
         this.activeModels = JSON.parse(localStorage.getItem('ai_active_models') || '{}');
         
-        // Ensure OpenRouter models are active by default
-        this.openRouterModels.split(',').map(m => m.trim()).forEach(model => {
-            if (!(model in this.activeModels)) {
-                this.activeModels[model] = true;
-            }
-        });
+        console.log('🔧 AIManager using models from UI panel:', this.aiModels);
+        console.log('🔧 Active models configuration:', this.activeModels);
+        
+        // Ensure all models from UI panel are active by default if not configured
+        if (this.aiModels) {
+            const modelArray = this.aiModels.split(',').map(m => m.trim());
+            modelArray.forEach(model => {
+                if (!(model in this.activeModels)) {
+                    this.activeModels[model] = true;
+                }
+            });
+        }
         
         console.log('🤖 AIManager initialized for VS Code with OpenRouter models:', this.activeModels);
     }
@@ -103,10 +110,18 @@ export class AIManager {
             }
 
             const ancestorNodes = this.getAncestorNodes(sourceNode);
+            // Refresh models from UI panel each time to ensure sync
+            this.aiModels = this.getModelsFromUIPanel();
+            console.log('🔄 Refreshed models from UI panel:', this.aiModels);
+            
             const allModels = this.aiModels.split(',').map(m => m.trim()).filter(m => m.length > 0);
             const models = allModels.filter(model => this.activeModels[model] !== false);
 
+            console.log('📊 All available models:', allModels);
+            console.log('✅ Active models for generation:', models);
+
             if (models.length === 0) {
+                console.warn('❌ No active models found for generation');
                 if (this.uiManager && this.uiManager.showNotification) {
                     this.uiManager.showNotification('No active models selected. Please configure your AI models first.', 'warning');
                 } else {
@@ -115,7 +130,7 @@ export class AIManager {
                 return;
             }
 
-            console.log(`Starting AI generation with ${models.length} model(s)...`);
+            console.log(`🚀 Starting AI generation with ${models.length} model(s):`, models);
 
             let completedModels = 0;
             let totalNodes = 0;
@@ -424,6 +439,25 @@ export class AIManager {
         console.log('✅ AI model configuration updated:', activeModels);
     }
     
+    // Get models from UI panel's localStorage - single source of truth
+    getModelsFromUIPanel() {
+        try {
+            const storedModels = localStorage.getItem('aiModels');
+            if (storedModels) {
+                const modelsArray = JSON.parse(storedModels);
+                console.log('📋 Found models in UI panel storage:', modelsArray);
+                return modelsArray.join(',');
+            } else {
+                console.log('⚠️ No models found in UI panel storage, using fallback');
+                // Fallback to default if nothing stored
+                return 'google/gemini-2.5-flash';
+            }
+        } catch (error) {
+            console.error('❌ Error reading models from UI panel:', error);
+            return 'google/gemini-2.5-flash';
+        }
+    }
+
     getProviderName() {
         return 'OpenRouter';
     }
