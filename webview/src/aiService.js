@@ -62,14 +62,14 @@ if (typeof window !== 'undefined') {
     });
 }
 
-export async function generateAIIdeasGroq(selectedNodeText, connectedNodes = [], model = 'anthropic/claude-3.5-sonnet') {
+export async function generateAIIdeasGroq(selectedNodeText, connectedNodes = [], model = 'anthropic/claude-3.5-sonnet', fileContent = null) {
     console.log('🎯 Using OpenRouter');
     console.log('🤖 Model:', model);
 
     // Check if API key is available
     if (!OPENROUTER_API_KEY) {
         console.warn('❌ OpenRouter API key not available, using mock response');
-        return generateMockResponse(selectedNodeText, model);
+        return generateMockResponse(selectedNodeText, model, fileContent);
     }
 
     // Construct messages array with connected nodes as conversation history
@@ -84,9 +84,16 @@ export async function generateAIIdeasGroq(selectedNodeText, connectedNodes = [],
     }
 
     // Add the current selected node as the latest message
-    messages.push({ role: "user", content: selectedNodeText });
+    // If we have file content, include it directly
+    let content = selectedNodeText;
+    if (fileContent) {
+        content = `${selectedNodeText}\n\nFile content:\n${fileContent}`;
+        console.log('📄 Including file content with node text');
+    }
 
-    console.log('💬 Message history:', messages.map(m => m.content));
+    messages.push({ role: "user", content: content });
+
+    console.log('💬 Message history:', messages.map(m => m.content.substring(0, 100) + (m.content.length > 100 ? '...' : '')));
 
     try {
         // Use fetch API since we're in a browser environment
@@ -102,7 +109,7 @@ export async function generateAIIdeasGroq(selectedNodeText, connectedNodes = [],
                 model: model,
                 messages: messages,
                 temperature: 0.7,
-                max_tokens: 150
+                max_tokens: fileContent ? 200 : 150 // Allow more tokens for markdown analysis
             })
         });
 
@@ -128,51 +135,92 @@ export async function generateAIIdeasGroq(selectedNodeText, connectedNodes = [],
 
         // Fallback to mock response if API fails
         console.log('🔄 Falling back to mock response...');
-        return generateMockResponse(selectedNodeText, model);
+        return generateMockResponse(selectedNodeText, model, fileContent);
     }
 }
 
 // Fallback function for when OpenRouter API is not available
-function generateMockResponse(selectedNodeText, model) {
+function generateMockResponse(selectedNodeText, model, fileContent = null) {
     const modelName = model.toLowerCase();
     const input = selectedNodeText.toLowerCase();
 
     // Generate contextual mock responses
     let responses = [];
 
-    if (modelName.includes('claude')) {
-        responses = [
-            `Building on "${selectedNodeText.substring(0, 30)}...", here's an expanded perspective from Claude.`,
-            `Your idea about "${selectedNodeText.substring(0, 25)}..." could be developed further with thoughtful analysis.`,
-            `Considering "${selectedNodeText.substring(0, 20)}...", what about exploring related concepts with careful reasoning?`
-        ];
-    } else if (modelName.includes('gpt')) {
-        responses = [
-            `From GPT's perspective: "${selectedNodeText.substring(0, 30)}..." presents interesting opportunities.`,
-            `Analyzing "${selectedNodeText.substring(0, 25)}..." from different viewpoints reveals new insights.`,
-            `Your concept "${selectedNodeText.substring(0, 20)}..." could benefit from systematic exploration.`
-        ];
-    } else if (modelName.includes('llama')) {
-        responses = [
-            `Thoughtfully considering "${selectedNodeText.substring(0, 30)}...", here are some insights from Llama.`,
-            `Reflecting on "${selectedNodeText.substring(0, 25)}...", this could lead to interesting developments.`,
-            `Your idea "${selectedNodeText.substring(0, 20)}..." has potential for creative expansion.`
-        ];
-    }
+    // If we have file content, generate markdown-specific responses
+    if (fileContent) {
+        const contentLength = fileContent.length;
+        const wordCount = fileContent.split(/\s+/).length;
+        const hasHeadings = fileContent.includes('#');
+        const hasCodeBlocks = fileContent.includes('```');
+        const hasLinks = fileContent.includes('[') && fileContent.includes('](');
 
-    // Add topic-specific responses
-    if (input.includes('business') || input.includes('startup')) {
-        responses.push('Consider market validation and competitive analysis for this business concept.');
-    } else if (input.includes('technology') || input.includes('software')) {
-        responses.push('Technical implementation and scalability are key factors to consider.');
-    } else if (input.includes('creative') || input.includes('art')) {
-        responses.push('Explore different artistic mediums and creative approaches for this idea.');
-    } else if (input.includes('code') || input.includes('programming')) {
-        responses.push('Consider design patterns, testing strategies, and code maintainability.');
-    } else if (input.includes('data') || input.includes('analysis')) {
-        responses.push('Data quality, visualization techniques, and statistical significance should be evaluated.');
+        if (modelName.includes('claude')) {
+            responses = [
+                `After analyzing your markdown file (${wordCount} words), I suggest exploring the interconnections between the main concepts presented.`,
+                `This markdown document contains rich content. Consider creating visual diagrams to represent the key relationships.`,
+                `The structure of your markdown suggests potential for breaking down complex topics into actionable sub-components.`
+            ];
+        } else if (modelName.includes('gpt')) {
+            responses = [
+                `Your markdown file presents ${hasHeadings ? 'well-structured' : 'detailed'} content. Consider adding ${hasCodeBlocks ? 'more examples' : 'code examples'} to illustrate key points.`,
+                `Based on the markdown analysis, this could benefit from ${hasLinks ? 'additional cross-references' : 'relevant external links'}.`,
+                `The documentation shows potential for expansion into related topics and practical applications.`
+            ];
+        } else {
+            responses = [
+                `Analyzing your markdown content reveals opportunities for deeper exploration of the main themes.`,
+                `This document could serve as a foundation for developing more specialized content or tutorials.`,
+                `Consider how the concepts in this markdown could be applied to real-world scenarios.`
+            ];
+        }
+
+        // Add markdown-specific suggestions
+        if (hasHeadings) {
+            responses.push('Each heading section could be expanded into its own detailed exploration.');
+        }
+        if (hasCodeBlocks) {
+            responses.push('The code examples provide excellent starting points for hands-on experimentation.');
+        }
+        if (contentLength > 1000) {
+            responses.push('This comprehensive document could be broken down into a series of focused topics.');
+        }
     } else {
-        responses.push('This concept has potential for further development and exploration.');
+        // Regular node responses (non-markdown)
+        if (modelName.includes('claude')) {
+            responses = [
+                `Building on "${selectedNodeText.substring(0, 30)}...", here's an expanded perspective from Claude.`,
+                `Your idea about "${selectedNodeText.substring(0, 25)}..." could be developed further with thoughtful analysis.`,
+                `Considering "${selectedNodeText.substring(0, 20)}...", what about exploring related concepts with careful reasoning?`
+            ];
+        } else if (modelName.includes('gpt')) {
+            responses = [
+                `From GPT's perspective: "${selectedNodeText.substring(0, 30)}..." presents interesting opportunities.`,
+                `Analyzing "${selectedNodeText.substring(0, 25)}..." from different viewpoints reveals new insights.`,
+                `Your concept "${selectedNodeText.substring(0, 20)}..." could benefit from systematic exploration.`
+            ];
+        } else if (modelName.includes('llama')) {
+            responses = [
+                `Thoughtfully considering "${selectedNodeText.substring(0, 30)}...", here are some insights from Llama.`,
+                `Reflecting on "${selectedNodeText.substring(0, 25)}...", this could lead to interesting developments.`,
+                `Your idea "${selectedNodeText.substring(0, 20)}..." has potential for creative expansion.`
+            ];
+        }
+
+        // Add topic-specific responses
+        if (input.includes('business') || input.includes('startup')) {
+            responses.push('Consider market validation and competitive analysis for this business concept.');
+        } else if (input.includes('technology') || input.includes('software')) {
+            responses.push('Technical implementation and scalability are key factors to consider.');
+        } else if (input.includes('creative') || input.includes('art')) {
+            responses.push('Explore different artistic mediums and creative approaches for this idea.');
+        } else if (input.includes('code') || input.includes('programming')) {
+            responses.push('Consider design patterns, testing strategies, and code maintainability.');
+        } else if (input.includes('data') || input.includes('analysis')) {
+            responses.push('Data quality, visualization techniques, and statistical significance should be evaluated.');
+        } else {
+            responses.push('This concept has potential for further development and exploration.');
+        }
     }
 
     const responseText = responses[Math.floor(Math.random() * responses.length)];

@@ -1269,16 +1269,21 @@ class InputHandler {
     createFileNodeFromPath(filePath, x, y) {
         console.log('📄 Creating file node from path:', filePath);
         
-        // Clean up the path (remove workspace prefix if present)
-        let relativePath = filePath;
+        // Store both the full path and display name
+        let displayName = filePath;
+        let fullPath = filePath;
+        
         if (filePath.startsWith('/')) {
-            // Convert absolute path to relative if possible
+            // For absolute paths, use filename for display but keep full path for content access
             const pathParts = filePath.split('/');
-            relativePath = pathParts[pathParts.length - 1]; // Just use filename for now
+            displayName = pathParts[pathParts.length - 1];
+            fullPath = filePath; // Keep the full path
         }
         
-        const fileNode = this.canvasState.createFileNode(relativePath, x, y);
-        console.log('✅ File node created:', fileNode.id);
+        const fileNode = this.canvasState.createFileNode(displayName, x, y);
+        // Store the full path for content retrieval
+        fileNode.fullPath = fullPath;
+        console.log('✅ File node created:', fileNode.id, 'with full path:', fullPath);
     }
     
     promptForFileImport(file, x, y) {

@@ -44,6 +44,26 @@ export class AIManager {
 
         const sourceNode = this.canvasState.selectedNodes[0];
 
+        // Check if node has valid content - either text, file, or fullPath
+        const hasText = sourceNode.text && typeof sourceNode.text === 'string';
+        const hasFile = sourceNode.file && typeof sourceNode.file === 'string';
+        const hasFullPath = sourceNode.fullPath && typeof sourceNode.fullPath === 'string';
+        const isFileNode = sourceNode.type === 'file';
+        
+        if (!hasText && !hasFile && !hasFullPath && !isFileNode) {
+            if (this.uiManager && this.uiManager.showNotification) {
+                this.uiManager.showNotification('Selected node has no content to generate ideas from', 'warning');
+            } else {
+                console.warn('Selected node has no content');
+            }
+            return;
+        }
+
+        // For file nodes, we'll use the file content instead of text
+        if (isFileNode || hasFile || hasFullPath) {
+            console.log('📄 Processing file node for AI generation');
+        }
+
         if (sourceNode.isGeneratingAI) {
             if (this.uiManager && this.uiManager.showNotification) {
                 this.uiManager.showNotification('AI generation already in progress for this node...', 'info');
@@ -56,6 +76,31 @@ export class AIManager {
         try {
             sourceNode.isGeneratingAI = true;
             console.log('🎯 Generating ideas for:', sourceNode.text);
+
+            // Check if this is a markdown file and get its content
+            let fileContent = null;
+            let nodeText = sourceNode.text || sourceNode.file || sourceNode.fullPath || 'file content';
+            
+            const isMarkdownFile = this.isMarkdownFile(sourceNode);
+            
+            if (isMarkdownFile || isFileNode) {
+                console.log('📄 Detected markdown/file node, requesting content...');
+                fileContent = await this.getFileContent(sourceNode);
+                
+                // If we successfully got file content, use it as the main text
+                if (fileContent && fileContent.trim().length > 0) {
+                    nodeText = fileContent;
+                    console.log('✅ Using file content as primary text for AI analysis');
+                    // Set fileContent to null since we're using it as main content
+                    fileContent = null;
+                } else {
+                    // Fallback to filename if no content retrieved
+                    if (!sourceNode.text && (sourceNode.file || sourceNode.fullPath)) {
+                        nodeText = sourceNode.file || sourceNode.fullPath.split('/').pop() || 'file content';
+                    }
+                    console.log('⚠️ No file content retrieved, using filename as fallback');
+                }
+            }
 
             const ancestorNodes = this.getAncestorNodes(sourceNode);
             const allModels = this.aiModels.split(',').map(m => m.trim()).filter(m => m.length > 0);
@@ -114,10 +159,11 @@ export class AIManager {
             };
 
             const modelResults = await this.generateAIIdeasMultipleModelsOpenRouter(
-                sourceNode.text,
+                nodeText,
                 ancestorNodes,
                 models,
-                onModelComplete
+                onModelComplete,
+                fileContent
             );
 
             const successfulModels = modelResults.filter(r => r.success).length;
@@ -128,6 +174,9 @@ export class AIManager {
                 summaryMessage = `🎉 Generation complete! Created ${totalNodes} idea(s) from ${successfulModels} model(s)`;
                 if (failedModels > 0) {
                     summaryMessage += ` (${failedModels} model(s) failed)`;
+                }
+                if (isMarkdownFile) {
+                    summaryMessage += ' (analyzed markdown content)';
                 }
             } else {
                 summaryMessage = `❌ No ideas generated. All ${models.length} model(s) failed.`;
@@ -153,6 +202,95 @@ export class AIManager {
                 this.uiManager.updateFloatingButton();
             }
         }
+    }
+
+    // Helper method to detect if node represents a markdown file
+    isMarkdownFile(node) {
+        // Check if it's a file node
+        if (node.type === 'file') {
+            return true; // Assume file nodes should be processed for content
+        }
+        
+        // Check various node properties for markdown indicators
+        const textToCheck = node.text || node.file || node.fullPath || '';
+        
+        if (!textToCheck || typeof textToCheck !== 'string') {
+            return false;
+        }
+        
+        // Check if the text looks like a file path ending with .md
+        const trimmed = textToCheck.trim();
+        return trimmed.endsWith('.md') || trimmed.includes('.md ') ||
+               trimmed.toLowerCase().includes('markdown') ||
+               (trimmed.includes('/') && trimmed.endsWith('.md'));
+    }
+
+    // Helper method to get file content from VS Code
+    async getFileContent(sourceNode) {
+        return new Promise((resolve) => {
+            if (!window.vsCodeAPI) {
+                console.warn('❌ VS Code API not available');
+                resolve(null);
+                return;
+            }
+
+            // Determine the file path to use
+            let filePath = sourceNode.text;
+            
+            // If this is a file node with a fullPath, use that instead
+            if (sourceNode.fullPath) {
+                filePath = sourceNode.fullPath;
+                console.log('📁 Using full path for file node:', filePath);
+            } else if (sourceNode.file) {
+                filePath = sourceNode.file;
+                console.log('📄 Using file property:', filePath);
+            }
+
+            // Check if the file node already has content loaded
+            if (sourceNode.content && sourceNode.isContentLoaded) {
+                console.log('✅ Using already loaded file content');
+                resolve(sourceNode.content);
+                return;
+            }
+
+            // Create a temporary node ID for this request
+            const tempNodeId = 'temp_ai_request_' + Date.now();
+            
+            // Set up listener for the response using the correct message type
+            const messageHandler = (event) => {
+                const message = event.data;
+                if (message.type === 'fileContentLoaded' && message.nodeId === tempNodeId) {
+                    window.removeEventListener('message', messageHandler);
+                    if (message.content && typeof message.content === 'string') {
+                        console.log('✅ Received file content:', message.content.substring(0, 100) + '...');
+                        resolve(message.content);
+                    } else {
+                        console.warn('❌ No content in file response');
+                        resolve(null);
+                    }
+                } else if (message.type === 'fileContentError' && message.nodeId === tempNodeId) {
+                    window.removeEventListener('message', messageHandler);
+                    console.warn('❌ Failed to get file content:', message.error);
+                    resolve(null);
+                }
+            };
+
+            window.addEventListener('message', messageHandler);
+
+            // Request file content using the working message type
+            window.vsCodeAPI.postMessage({
+                type: 'loadFile',
+                filePath: filePath,
+                nodeId: tempNodeId
+            });
+
+            // Timeout after 5 seconds
+            setTimeout(() => {
+                window.removeEventListener('message', messageHandler);
+                console.warn('⏰ Timeout waiting for file content');
+                resolve(null);
+            }, 5000);
+        });
     }
     
     // Helper method to get ancestor nodes (simplified)
@@ -181,7 +319,7 @@ export class AIManager {
     }
     
     // OpenRouter-based AI generation for multiple models
-    async generateAIIdeasMultipleModelsOpenRouter(selectedNodeText, connectedNodes = [], models = [], onModelComplete = null) {
+    async generateAIIdeasMultipleModelsOpenRouter(selectedNodeText, connectedNodes = [], models = [], onModelComplete = null, fileContent = null) {
         if (!models || models.length === 0) {
             throw new Error('No models specified');
         }
@@ -193,12 +331,15 @@ export class AIManager {
         }
 
         console.log(`🚀 Starting parallel OpenRouter generation with ${trimmedModels.length} models:`, trimmedModels);
+        if (fileContent) {
+            console.log('📄 Including markdown file content in generation');
+        }
 
         // Create promises for all models to run in parallel
         const modelPromises = trimmedModels.map(async (model) => {
             try {
                 console.log(`🤖 Starting OpenRouter generation with model: ${model}`);
-                const ideas = await generateAIIdeasGroq(selectedNodeText, connectedNodes, model);
+                const ideas = await generateAIIdeasGroq(selectedNodeText, connectedNodes, model, fileContent);
 
                 const result = {
                     model: model,
