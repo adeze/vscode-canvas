@@ -2498,7 +2498,7 @@ class UIManager {
         // Create floating generate button (initially hidden)
         const generateBtn = document.createElement('button');
         generateBtn.id = 'floating-generate-btn';
-        generateBtn.innerHTML = '✨ Generate Ideas';
+        generateBtn.innerHTML = '✨ Generate';
         generateBtn.style.cssText = `
             position: absolute;
             padding: 8px 16px;
@@ -3176,7 +3176,7 @@ class UIManager {
                 this.floatingGenerateBtn.style.opacity = '0.7';
                 this.floatingGenerateBtn.style.cursor = 'not-allowed';
             } else {
-                this.floatingGenerateBtn.innerHTML = '✨ Generate Ideas';
+                this.floatingGenerateBtn.innerHTML = '✨ Generate';
                 this.floatingGenerateBtn.style.opacity = '1';
                 this.floatingGenerateBtn.style.cursor = 'pointer';
             }
