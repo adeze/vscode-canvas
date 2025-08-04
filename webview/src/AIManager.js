@@ -7,7 +7,7 @@ export class AIManager {
         this.uiManager = uiManager;
         
         // AI configuration - using OpenRouter
-        this.demoMode = false; // Using OpenRouter instead of demo mode
+        this.demoMode = false; // API key required for AI functionality
         this.openRouterModels = 'anthropic/claude-3.5-sonnet,openai/gpt-4o,meta-llama/llama-3.1-8b-instruct';
         this.aiModels = this.openRouterModels;
         this.activeModels = JSON.parse(localStorage.getItem('ai_active_models') || '{}');

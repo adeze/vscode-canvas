@@ -15,4 +15,9 @@ bug is see:
     lets also add a base url in the panel, put the url openrouter as default, but the user can change it so he can use other base url and other api keys ,
     also this panel should appear only when i click config button, i mean lets add a config button that makes appear and disappear , this ways only show when i want 
 
-    
+
+    now lets remove the mock node creations when not using an apikey configuration, make it simple, just sned a message of need to configure apikey
+
+
+    given that the generated nodes are created below, the conector arrow should be from the bottom not the rigth side, of the current node, fix that 
+        
