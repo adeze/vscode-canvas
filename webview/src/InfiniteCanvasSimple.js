@@ -163,6 +163,13 @@ export class InfiniteCanvas {
         // Set up automatic render triggers
         this.canvasState.onStateChange = () => this.requestRender();
         
+        // Set up selection change callback for floating button updates
+        this.canvasState.onSelectionChange = () => {
+            if (this.uiManager) {
+                this.uiManager.updateFloatingButton();
+            }
+        };
+        
         // Update InputHandler with render callback
         if (this.inputHandler) {
             this.inputHandler.setRenderCallback(this.requestRender);
@@ -376,12 +383,21 @@ class CanvasState {
         this.clearSelection();
         node.isSelected = true;
         this.selectedNodes = [node];
+        this.notifySelectionChange();
     }
     
     clearSelection() {
         this.nodes.forEach(node => node.isSelected = false);
         this.selectedNodes = [];
         this.selectedConnection = null;
+        this.notifySelectionChange();
+    }
+    
+    notifySelectionChange() {
+        // Notify UI manager about selection changes for floating button updates
+        if (this.onSelectionChange) {
+            this.onSelectionChange();
+        }
     }
     
     getNodeAt(x, y) {
@@ -734,6 +750,9 @@ class InputHandler {
                 this.canvasState.offsetX += deltaX;
                 this.canvasState.offsetY += deltaY;
                 
+                // Update floating button position after pan
+                this.canvasState.notifySelectionChange();
+                
                 // Request render for panning
                 if (this.requestRender) {
                     this.requestRender();
@@ -810,6 +829,9 @@ class InputHandler {
         this.canvasState.offsetY -= (mouseY - this.canvasState.offsetY) * scaleDiff / this.canvasState.scale;
         
         this.canvasState.scale = newScale;
+        
+        // Update floating button position after zoom
+        this.canvasState.notifySelectionChange();
         
         // Request render for zoom
         if (this.requestRender) {
@@ -1932,66 +1954,43 @@ class UIManager {
     }
     
     setupUI() {
-        this.createAIControls();
+        this.createFloatingGenerateButton();
         this.createNotificationContainer();
+        this.createModelSelectionPanel();
         console.log('🎨 UI Manager setup completed');
     }
     
-    createAIControls() {
-        // Create AI controls container
-        const controlsContainer = document.createElement('div');
-        controlsContainer.id = 'ai-controls';
-        controlsContainer.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: rgba(45, 45, 45, 0.95);
-            border: 1px solid #666;
-            border-radius: 8px;
-            padding: 15px;
-            z-index: 1000;
-            backdrop-filter: blur(10px);
-            min-width: 250px;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        `;
-        
-        // Title
-        const title = document.createElement('h3');
-        title.textContent = '🤖 AI Ideas';
-        title.style.cssText = `
-            margin: 0 0 15px 0;
-            color: #e0e0e0;
-            font-size: 16px;
-            font-weight: 600;
-        `;
-        controlsContainer.appendChild(title);
-        
-        // Generate Ideas Button
+    createFloatingGenerateButton() {
+        // Create floating generate button (initially hidden)
         const generateBtn = document.createElement('button');
-        generateBtn.id = 'generate-ideas-btn';
+        generateBtn.id = 'floating-generate-btn';
         generateBtn.innerHTML = '✨ Generate Ideas';
         generateBtn.style.cssText = `
-            width: 100%;
-            padding: 12px;
+            position: absolute;
+            padding: 8px 16px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            border-radius: 6px;
+            border-radius: 20px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 12px;
             font-weight: 500;
-            margin-bottom: 15px;
+            z-index: 1000;
+            display: none;
+            transform: translateX(-50%);
             transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         `;
         
         generateBtn.addEventListener('mouseenter', () => {
-            generateBtn.style.transform = 'translateY(-2px)';
+            generateBtn.style.transform = 'translateX(-50%) translateY(-2px)';
             generateBtn.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)';
         });
         
         generateBtn.addEventListener('mouseleave', () => {
-            generateBtn.style.transform = 'translateY(0)';
-            generateBtn.style.boxShadow = 'none';
+            generateBtn.style.transform = 'translateX(-50%) translateY(0)';
+            generateBtn.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.3)';
         });
         
         generateBtn.addEventListener('click', () => {
@@ -2002,19 +2001,65 @@ class UIManager {
             }
         });
         
-        controlsContainer.appendChild(generateBtn);
-        
-        // Model Selection
-        const modelLabel = document.createElement('label');
-        modelLabel.textContent = 'Active Models:';
-        modelLabel.style.cssText = `
-            display: block;
-            color: #b0b0b0;
-            font-size: 12px;
-            margin-bottom: 8px;
-            font-weight: 500;
+        document.body.appendChild(generateBtn);
+        this.floatingGenerateBtn = generateBtn;
+    }
+    
+    createModelSelectionPanel() {
+        // Create a smaller model selection panel (togglable)
+        const controlsContainer = document.createElement('div');
+        controlsContainer.id = 'ai-model-controls';
+        controlsContainer.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(45, 45, 45, 0.95);
+            border: 1px solid #666;
+            border-radius: 8px;
+            padding: 12px;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            min-width: 200px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         `;
-        controlsContainer.appendChild(modelLabel);
+        
+        // Title with toggle
+        const header = document.createElement('div');
+        header.style.cssText = `
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        `;
+        
+        const title = document.createElement('h4');
+        title.textContent = '🤖 AI Models';
+        title.style.cssText = `
+            margin: 0;
+            color: #e0e0e0;
+            font-size: 14px;
+            font-weight: 600;
+        `;
+        
+        const toggleBtn = document.createElement('button');
+        toggleBtn.textContent = '−';
+        toggleBtn.style.cssText = `
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        `;
+        
+        header.appendChild(title);
+        header.appendChild(toggleBtn);
+        controlsContainer.appendChild(header);
         
         // Model checkboxes container
         const modelsContainer = document.createElement('div');
@@ -2022,8 +2067,8 @@ class UIManager {
         modelsContainer.style.cssText = `
             background: rgba(30, 30, 30, 0.7);
             border-radius: 4px;
-            padding: 10px;
-            margin-bottom: 10px;
+            padding: 8px;
+            margin-bottom: 8px;
         `;
         
         // Add model checkboxes
@@ -2033,7 +2078,7 @@ class UIManager {
             modelDiv.style.cssText = `
                 display: flex;
                 align-items: center;
-                margin-bottom: 6px;
+                margin-bottom: 4px;
             `;
             
             const checkbox = document.createElement('input');
@@ -2041,7 +2086,7 @@ class UIManager {
             checkbox.id = `model-${model}`;
             checkbox.checked = true; // Default to checked
             checkbox.style.cssText = `
-                margin-right: 8px;
+                margin-right: 6px;
                 accent-color: #667eea;
             `;
             
@@ -2050,7 +2095,7 @@ class UIManager {
             label.textContent = model.split('-')[0]; // Show simplified name
             label.style.cssText = `
                 color: #d0d0d0;
-                font-size: 11px;
+                font-size: 10px;
                 cursor: pointer;
                 user-select: none;
             `;
@@ -2070,15 +2115,24 @@ class UIManager {
         const statusDiv = document.createElement('div');
         statusDiv.id = 'ai-status';
         statusDiv.style.cssText = `
-            font-size: 11px;
+            font-size: 10px;
             color: #888;
             text-align: center;
-            padding: 5px;
+            padding: 4px;
             background: rgba(0, 0, 0, 0.3);
             border-radius: 4px;
         `;
-        statusDiv.textContent = 'Demo Mode (Groq)';
+        statusDiv.textContent = 'Demo Mode';
         controlsContainer.appendChild(statusDiv);
+        
+        // Toggle functionality
+        let isCollapsed = false;
+        toggleBtn.addEventListener('click', () => {
+            isCollapsed = !isCollapsed;
+            modelsContainer.style.display = isCollapsed ? 'none' : 'block';
+            statusDiv.style.display = isCollapsed ? 'none' : 'block';
+            toggleBtn.textContent = isCollapsed ? '+' : '−';
+        });
         
         document.body.appendChild(controlsContainer);
     }
@@ -2103,6 +2157,52 @@ class UIManager {
             this.canvas.aiManager.setActiveModels(activeModels);
             console.log(`🔧 Model ${model} ${isActive ? 'enabled' : 'disabled'}`);
         }
+    }
+    
+    updateFloatingButton() {
+        if (!this.floatingGenerateBtn) return;
+        
+        const selectedNodes = this.canvas.canvasState.selectedNodes;
+        
+        if (selectedNodes.length === 1) {
+            // Show button above the selected node
+            const node = selectedNodes[0];
+            const canvasRect = this.canvas.canvas.getBoundingClientRect();
+            
+            // Calculate position in screen coordinates
+            const screenX = canvasRect.left + (node.x + node.width / 2 + this.canvas.canvasState.offsetX) * this.canvas.canvasState.scale;
+            const screenY = canvasRect.top + (node.y - 40 + this.canvas.canvasState.offsetY) * this.canvas.canvasState.scale;
+            
+            this.floatingGenerateBtn.style.left = `${screenX}px`;
+            this.floatingGenerateBtn.style.top = `${screenY}px`;
+            this.floatingGenerateBtn.style.display = 'block';
+            
+            // Add generating state visual feedback
+            if (node.isGeneratingAI) {
+                this.floatingGenerateBtn.innerHTML = '⏳ Generating...';
+                this.floatingGenerateBtn.style.opacity = '0.7';
+                this.floatingGenerateBtn.style.cursor = 'not-allowed';
+            } else {
+                this.floatingGenerateBtn.innerHTML = '✨ Generate Ideas';
+                this.floatingGenerateBtn.style.opacity = '1';
+                this.floatingGenerateBtn.style.cursor = 'pointer';
+            }
+        } else {
+            // Hide button when no single node is selected
+            this.floatingGenerateBtn.style.display = 'none';
+        }
+    }
+    
+    hideFloatingButton() {
+        if (this.floatingGenerateBtn) {
+            this.floatingGenerateBtn.style.display = 'none';
+        }
+    }
+    
+    updateGenerateIdeasTooltip() {
+        // This method exists in the original AIManager for compatibility
+        // Update the floating button state
+        this.updateFloatingButton();
     }
     
     showNotification(message, type = 'info', duration = 3000) {

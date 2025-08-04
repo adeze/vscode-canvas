@@ -148,6 +148,10 @@ export class AIManager {
             }
         } finally {
             sourceNode.isGeneratingAI = false;
+            // Update floating button state after AI generation completes
+            if (this.uiManager && this.uiManager.updateFloatingButton) {
+                this.uiManager.updateFloatingButton();
+            }
         }
     }
     
