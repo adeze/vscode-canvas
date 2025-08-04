@@ -1,341 +1,147 @@
-# Infinite Canvas VS Code Extension
+# Infinite Canvas
 
-Transform the infinite canvas web application into a VS Code extension that can open and edit `.canvas` files. **Fully compatible with Obsidian canvas format.**
+Visual canvas editor for VS Code - create and edit `.canvas` files with infinite space, AI-powered content generation, and markdown support.
 
-## Project Overview
+![Infinite Canvas Extension](https://img.shields.io/badge/VS%20Code-Extension-blue)
+![Version](https://img.shields.io/badge/version-0.1.0-green)
+![License](https://img.shields.io/badge/license-MIT-blue)
 
-**Goal**: Adapt the existing infinite canvas web app to work as a VS Code extension, allowing users to open and edit canvas files directly within VS Code.
+## Features
 
-**Status**: ✅ Phase 2 Complete - Enhanced Extension with Markdown Support
+### 🎨 Visual Canvas Editor
+- **Infinite workspace**: Create and organize content on an unlimited canvas
+- **Intuitive interactions**: Double-click to create, drag to move, mouse wheel to zoom
+- **Node-based editing**: Create text nodes and connect them with visual relationships
+- **File integration**: Drag & drop workspace files to create reference nodes
+
+### 🤖 AI-Powered Content Generation
+- **Generate Ideas**: Click the "✨ Generate Ideas" button to generate connected content
+- **Multiple AI Models**: Choose from Llama 3.3, QWQ, and Gemma2 models
+- **Smart Context**: Uses connected nodes as conversation history for relevant suggestions
+- **Free to use**: Works with free Groq API or falls back to mock responses
+
+### 📝 Markdown Support
+- **Edit markdown files**: Double-click `.md` file nodes to edit content directly
+- **Rich preview**: Beautiful markdown rendering with syntax highlighting
+- **Real-time sync**: Changes save automatically to your workspace files
+- **Seamless workflow**: Edit markdown without leaving your canvas
+
+### 🔗 Obsidian Compatibility
+- **Native format**: Uses the same `.canvas` format as Obsidian
+- **Bidirectional**: Files work seamlessly between VS Code and Obsidian
+- **Import/Export**: Open existing Obsidian canvas files directly
 
 ## Quick Start
 
-### Development Setup
-```bash
-# Install dependencies
-npm install
+1. **Install** the extension from the VS Code marketplace
+2. **Create** a new `.canvas` file in your workspace
+3. **Double-click** the file to open it with Infinite Canvas
+4. **Double-click** on empty space to create your first text node
+5. **Start creating** your visual workspace!
 
-# Compile TypeScript  
-npm run compile
+## Usage Guide
 
-# Start development
-# 1. Open this project in VS Code
-# 2. Launch Extension Development Host:
-#    - Mac: Cmd+Shift+P → "Debug: Start Debugging"
-#    - Or: Run menu → Start Debugging
-#    - Or: Fn+F5 (if you have function keys)
-# 3. In new window, create a .canvas file
-# 4. Double-click to open with Infinite Canvas
-```
+### Creating Content
+- **New text node**: Double-click on empty canvas space
+- **Edit text**: Double-click on any text node to edit inline
+- **Create connections**: Hold Shift and drag between nodes
+- **Add files**: Drag files from VS Code explorer to canvas
 
-### Basic Usage
-- **Double-click empty space**: Create new text node
-- **Double-click text node**: Edit text inline
-- **Double-click .md file node**: Edit markdown content
-- **Drag nodes**: Move around canvas
-- **Mouse wheel**: Zoom in/out
-- **Drag background**: Pan canvas
-- **Delete key**: Remove selected nodes
-- **Drag & drop files**: Create file nodes from workspace files
+### Navigation
+- **Pan**: Drag the background to move around
+- **Zoom**: Use mouse wheel to zoom in/out
+- **Select**: Click nodes to select them
+- **Delete**: Press Delete key to remove selected nodes
 
-### AI Features Usage
-- **Generate Ideas**: Select a node and click "✨ Generate Ideas" in the AI panel
-- **Configure Models**: Use checkboxes to enable/disable AI models
-- **API Setup**: Add your Groq API key in VS Code settings (optional - works with mock responses)
-- **Connect Nodes**: Hold Shift and drag from connection points to create relationships
+### AI Features
+1. **Select a node** you want to expand on
+2. **Click "✨ Generate Ideas"** in the AI panel
+3. **Choose AI models** using the checkboxes
+4. **Watch** as connected ideas appear automatically
 
-📖 See [DEVELOPMENT.md](./DEVELOPMENT.md) for detailed development guide.
+### Settings
+- **Groq API Key**: Add your free API key in VS Code settings for AI features
+  - Go to Settings → Extensions → Infinite Canvas
+  - Add your API key from [console.groq.com](https://console.groq.com)
+  - Leave empty to use mock responses
 
-## 🚀 Recent Features Added
+## File Format
 
-### 🤖 AI-Powered Content Generation
-- **Generate Ideas Button**: Click to generate connected ideas from selected nodes
-- **Multiple AI Models**: Choose from Llama 3.3, QWQ, and Gemma2 models
-- **Demo Mode**: Works with free Groq API or falls back to mock responses
-- **Smart Context**: Uses connected nodes as conversation history
-- **Visual Feedback**: Real-time notifications and progress indicators
+Infinite Canvas uses the standard Obsidian canvas format:
 
-### ✨ Markdown File Support
-- **File node referencing**: Create nodes that reference workspace files
-- **Markdown editing**: Double-click .md nodes to edit content directly in canvas
-- **Enhanced rendering**: Rich markdown preview with syntax highlighting
-- **Real-time sync**: Changes save automatically to workspace files
-
-### 🎯 Simplified Editor Experience
-- **One-click editing**: Double-click any .md node to start editing
-- **Clean interface**: Removed complex toolbar for distraction-free editing
-- **Keyboard shortcuts**: 
-  - `Ctrl+Enter` / `Cmd+Enter` to save
-  - `Esc` to cancel
-  - `Tab` for indentation
-- **Click outside to save**: Convenient auto-save when clicking elsewhere
-
-### ⚡ Performance Improvements
-- **On-demand rendering**: Optimized render system prevents infinite loops
-- **Smooth interactions**: Fixed panning, zooming, and viewport issues
-- **Error resilience**: Robust markdown rendering with graceful fallbacks
-- **Memory efficient**: Render-on-demand system reduces resource usage
-
-### 🔧 Technical Enhancements
-- **Viewport preservation**: Pan/zoom state maintained during file operations
-- **Async module loading**: Proper initialization prevents render conflicts
-- **Enhanced error handling**: Comprehensive error recovery and logging
-- **Improved state management**: Better synchronization between components
-
-## Obsidian Compatibility
-
-This extension is **fully compatible** with Obsidian canvas files:
-
-### ✅ Format Support
-- **Native Obsidian Format**: Uses the same format as Obsidian canvas
-- **Bidirectional**: Canvas files work seamlessly between VS Code and Obsidian
-- **Clean Structure**: Simple nodes and edges arrays
-
-### 📋 File Format
-Uses the standard Obsidian canvas structure:
 ```json
 {
   "nodes": [
-    {"id": "...", "x": -199, "y": -275, "width": 250, "height": 60, "type": "text", "text": "..."}
+    {
+      "id": "unique-id",
+      "x": 100,
+      "y": 100,
+      "width": 250,
+      "height": 60,
+      "type": "text",
+      "text": "Your content here"
+    }
   ],
   "edges": [
-    {"id": "...", "fromNode": "...", "fromSide": "bottom", "toNode": "...", "toSide": "top"}
+    {
+      "id": "edge-id",
+      "fromNode": "node-1",
+      "fromSide": "bottom",
+      "toNode": "node-2",
+      "toSide": "top"
+    }
   ]
 }
 ```
 
-### 🎯 Focused Format
-- Uses Obsidian canvas format exclusively
-- Clean, simple JSON structure
+## Keyboard Shortcuts
 
-## Architecture Overview
+| Shortcut | Action |
+|----------|--------|
+| `Double-click` | Create/edit nodes |
+| `Drag` | Move nodes or pan canvas |
+| `Mouse wheel` | Zoom in/out |
+| `Delete` | Remove selected nodes |
+| `Shift + drag` | Create connections |
+| `Ctrl+Enter` | Save when editing |
+| `Esc` | Cancel editing |
 
-### System Design
+## Requirements
 
-```
-┌─────────────────────────────────────────────────┐
-│            VS Code Extension                    │
-│  ┌─────────────────┐  ┌─────────────────────┐   │
-│  │  extension.ts   │  │   package.json      │   │
-│  │  - Activate     │  │   - File types      │   │
-│  │  - Commands     │  │   - Contributes     │   │
-│  └─────────────────┘  └─────────────────────┘   │
-│                               │                 │
-│  ┌─────────────────────────────────────────────┐ │
-│  │        Webview Panel                       │ │
-│  │  - Load existing web app                   │ │
-│  │  - Handle .canvas file I/O                │ │
-│  └─────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────┘
-                        │
-                 Embed Web App
-                        │
-┌─────────────────────────────────────────────────┐
-│           Existing Web App                      │
-│  ┌──────────────┐  ┌──────────────┐           │
-│  │ main.js      │  │ src/         │           │
-│  │ index.html   │  │ - Components │           │
-│  │ style.css    │  │ - AI Service │           │
-│  └──────────────┘  └──────────────┘           │
-└─────────────────────────────────────────────────┘
-```
+- VS Code 1.74.0 or higher
+- Optional: Free Groq API key for AI features ([Get one here](https://console.groq.com))
 
-### Core Components
+## Extension Settings
 
-#### VS Code Extension
-- **extension.ts**: Main entry point, registers custom editor for `.canvas` files
-- **package.json**: Extension manifest, file associations, activation events
-- **Webview Panel**: Loads existing web app with file I/O integration
+This extension contributes the following settings:
 
-#### Existing Web App (Embedded)
-- **main.js**: Entry point, initializes canvas
-- **index.html**: Base HTML structure  
-- **style.css**: UI styling
-- **src/**: Canvas components, AI services, rendering engine
+* `infinite-canvas.groqApiKey`: Your Groq API key for AI-powered idea generation (optional)
 
-### Data Flow
+## Known Issues
 
-```
-User Opens .canvas File → VS Code → Webview → Load Web App → Canvas
-                 ↑                                ↓
-VS Code File System ← Save/Load Canvas State ← Web App
-```
+- AI features require internet connection
+- Large canvases may impact performance on older machines
 
-## Planned Directory Structure
+## Release Notes
 
-```
-infinite-canvas-vscode/
-├── src/
-│   └── extension.ts              # Main extension file
-├── webview/                      # Copy of existing web app
-│   ├── main.js                   # Web app entry point
-│   ├── index.html                # Base HTML
-│   ├── style.css                 # Styling
-│   ├── src/                      # Canvas components
-│   │   ├── InfiniteCanvasSimple.js
-│   │   ├── CanvasState.js
-│   │   ├── canvasRenderer.js
-│   │   ├── InputHandler.js
-│   │   ├── UIManager.js
-│   │   ├── AIManager.js
-│   │   ├── aiService.js
-│   │   ├── markdownParser.js
-│   │   └── markdownRenderer.js
-│   └── public/
-│       └── icons/                # UI icons
-├── package.json                  # Extension manifest
-└── webpack.config.js            # Build configuration
-```
+### 0.1.0
 
-## Key Architectural Decisions
+Initial release of Infinite Canvas extension:
 
-### Simple Web App Embedding
-- **Minimal Extension**: Just file association and webview hosting
-- **Existing Web App**: Copy web app directly into webview folder
-- **Benefits**: Maximum code reuse, minimal adaptation required
+- ✨ Visual canvas editor for `.canvas` files
+- 🤖 AI-powered content generation
+- 📝 Markdown file editing support
+- 🔗 Full Obsidian canvas compatibility
+- ⚡ Smooth navigation and interactions
 
-### Custom Editor Registration
-- Register `.canvas` file type in `package.json`
-- Open files in webview panel containing web app
-- Handle save/load through webview messaging
+## Contributing
 
-### Implementation Strategy
-1. **Copy Web App**: Move existing web app to `webview/` folder
-2. **Basic Extension**: Minimal extension.ts for file association
-3. **File I/O**: Simple message passing for save/load operations
+Found a bug or have a feature request? Please visit our [GitHub repository](https://github.com/infinite-canvas/infinite-canvas-vscode).
 
-## File Format Design
+## License
 
-### .canvas File Structure
-```json
-{
-  "version": "1.0",
-  "canvas": {
-    "viewport": { "x": 0, "y": 0, "zoom": 1 },
-    "elements": [
-      {
-        "id": "element-1",
-        "type": "text-node",
-        "position": { "x": 100, "y": 100 },
-        "content": "Sample text content",
-        "metadata": { "created": "timestamp" }
-      }
-    ]
-  }
-}
-```
-
-### State Management
-- **Local State**: Canvas viewport, UI state (webview)
-- **Persistent State**: Canvas elements and data (extension host)
-- **Shared State**: Selection, active tools (synchronized)
-
-## VS Code Integration Points
-
-### APIs Used
-- `window.createWebviewPanel()` - Canvas editor container
-- `commands.registerCommand()` - Extension commands
-- `window.registerCustomEditorProvider()` - Custom file editor
-- `workspace.fs` - File system operations
-
-### VS Code Integration
-- **File Explorer Integration**: Canvas files appear in file explorer
-- **Quick Open**: Canvas files searchable via `Ctrl+P`
-- **File Association**: Automatic opening with canvas editor
-
-## Migration Roadmap
-
-### Phase 1: Basic Extension (Week 1) ✅ COMPLETE
-- [x] Create VS Code extension project
-- [x] Copy web app to webview folder (simplified version)
-- [x] Register `.canvas` file association in package.json
-- [x] Create basic extension.ts with webview
-- [x] Implement core canvas functionality
-
-**Deliverables**:
-- ✅ Working VS Code extension that opens `.canvas` files
-- ✅ Basic infinite canvas with create/edit/delete nodes
-- ✅ File save/load integration
-
-### Phase 2: Enhancement (Week 2) ✅ COMPLETE
-- [x] Add save/load messaging between extension and webview
-- [x] Integrate with VS Code file system API  
-- [x] Handle file changes and auto-save
-- [x] Add AI integration from original web app
-- [x] Implement generate ideas button and AI model selection
-- [x] Add connection creation workflow
-
-**Deliverables**:
-- Enhanced canvas editor with full feature set
-- AI-powered content generation
-
-### Phase 3: Polish & Publishing (Week 3)
-- [ ] Add extension icon and marketplace assets
-- [ ] Create extension documentation
-- [ ] Test AI features work in VS Code environment
-- [ ] Package and publish to marketplace
-
-**Deliverables**:
-- Published VS Code extension
-- Complete documentation
-
-## Performance Considerations
-
-### Optimization Strategies
-- **Web App Performance**: Existing optimizations carry over
-- **File I/O**: Debounced save operations to prevent excessive writes
-- **Memory Management**: Webview lifecycle handled by VS Code
-
-## Current Web App Reference
-
-The existing web application provides the foundation with these components:
-- **Canvas Rendering**: Core visualization engine
-- **AI Integration**: Replicate proxy and AI services
-- **State Management**: Canvas state and persistence
-- **UI Controls**: User interface and interaction handling
-
-See `docs/web_code_reference.txt` for complete web app implementation details.
-
-## Development Setup
-
-### Prerequisites
-- Node.js 16+
-- VS Code Extension Development Host
-- TypeScript 4.5+
-
-### Initial Setup Commands
-```bash
-# Install VS Code extension generator
-npm install -g yo generator-code
-
-# Generate extension skeleton
-yo code
-
-# Install dependencies
-npm install
-
-# Start development
-npm run watch
-```
-
-## Change Log
-
-### 2025-08-03
-- ✅ Completed architecture design
-- ✅ Defined system components and data flow
-- ✅ Planned directory structure
-- ✅ Created migration roadmap
-- 📝 Documented in README.md
-
-### Next Steps
-- [ ] Initialize VS Code extension project
-- [ ] Begin Phase 1 implementation
-- [ ] Setup development environment
-- [ ] Create initial extension manifest
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ---
 
-**Project Repository**: infinite_canvas_v5_vscode  
-**Original Web App**: infinite_canvas_v5  
-**Target Platform**: VS Code Extension  
-**Expected Timeline**: 6 weeks for full implementation
+**Enjoy creating with Infinite Canvas!** 🎨✨

@@ -74,8 +74,8 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/infinite-canvas-vscode"
+    "url": "https://github.com/infinite-canvas/infinite-canvas-vscode"
   },
-  "publisher": "your-publisher-name",
+  "publisher": "infinite-canvas-dev",
   "license": "MIT"
 }

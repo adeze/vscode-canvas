@@ -35,4 +35,4 @@ bug is see:
     shoud be test3.md to folder1/test3.md , thats why i got failed to load file. fix this problme, 
 
 
-    now 
+    as a user i see the markdown text is being hiddedn, for exampel a big senteces only show the initial words, but then the rest gets hidden, so to fix this , just append the text to the next line, i mean make it simple 
