@@ -50,6 +50,7 @@ export function deactivate() {}
 
 class CanvasEditorProvider implements vscode.CustomTextEditorProvider {
     private static readonly viewType = 'infinite-canvas.canvasEditor';
+    private isSaving = false; // Track when we're saving to prevent reload loops
 
     constructor(private readonly extensionUri: vscode.Uri) {}
 
@@ -76,7 +77,12 @@ class CanvasEditorProvider implements vscode.CustomTextEditorProvider {
             async (message) => {
                 switch (message.type) {
                     case 'save':
+                        this.isSaving = true;
                         await this.saveDocument(document, message.content);
+                        // Small delay to ensure save completes before allowing reloads
+                        setTimeout(() => {
+                            this.isSaving = false;
+                        }, 200);
                         break;
                     case 'ready':
                         // Send initial document content to webview
@@ -111,10 +117,15 @@ class CanvasEditorProvider implements vscode.CustomTextEditorProvider {
         // Handle document changes (when file is changed externally)
         const changeDocumentSubscription = vscode.workspace.onDidChangeTextDocument(e => {
             if (e.document.uri.toString() === document.uri.toString()) {
-                webviewPanel.webview.postMessage({
-                    type: 'loadContent',
-                    content: document.getText()
-                });
+                // Don't reload if we're currently saving (prevents save/reload loops)
+                if (!this.isSaving) {
+                    webviewPanel.webview.postMessage({
+                        type: 'loadContent',
+                        content: document.getText()
+                    });
+                } else {
+                    console.log('Skipping reload during save operation');
+                }
             }
         });
 

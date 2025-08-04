@@ -1,0 +1,27 @@
+{
+  "nodes": [
+    {
+      "id": "save-test-1",
+      "type": "text",
+      "text": "Edit me to test saving fix",
+      "x": 100,
+      "y": 100,
+      "width": 250,
+      "height": 120,
+      "maxHeight": 120,
+      "scrollY": 0
+    },
+    {
+      "id": "save-test-2",
+      "type": "text",
+      "text": "I should also save properly now",
+      "x": 400,
+      "y": 100,
+      "width": 250,
+      "height": 120,
+      "maxHeight": 120,
+      "scrollY": 0
+    }
+  ],
+  "edges": []
+}

@@ -549,6 +549,29 @@ class CanvasState {
     saveToLocalStorage() {
         this.notifyStateChange();
     }
+    
+    // Force immediate save to VS Code (for text node editing)
+    async saveCanvasState() {
+        try {
+            const canvasData = this.exportCanvasData();
+            const content = JSON.stringify(canvasData, null, 2);
+            
+            if (window.vsCodeAPI) {
+                window.vsCodeAPI.postMessage({
+                    type: 'save',
+                    content: content
+                });
+                console.log('💾 Canvas state saved immediately to VS Code');
+            } else {
+                console.warn('⚠️ VS Code API not available, falling back to state change');
+                this.notifyStateChange();
+            }
+        } catch (error) {
+            console.error('❌ Failed to save canvas state:', error);
+            // Fallback to normal state change
+            this.notifyStateChange();
+        }
+    }
 }
 
 // Simplified Input Handler
@@ -1115,44 +1138,98 @@ class InputHandler {
     }
     
     editNodeText(node) {
-        // Use a simple input overlay instead of prompt()
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.value = node.text;
-        input.style.position = 'absolute';
-        input.style.left = node.x + 'px';
-        input.style.top = node.y + 'px';
-        input.style.width = node.width + 'px';
-        input.style.zIndex = '1000';
-        input.style.backgroundColor = '#3c3c3c';
-        input.style.color = '#cccccc';
-        input.style.border = '2px solid #007fd4';
-        input.style.padding = '5px';
-        input.style.fontSize = '14px';
+        // Create inline text editor positioned relative to the canvas
+        const canvasRect = this.canvas.getBoundingClientRect();
         
-        document.body.appendChild(input);
-        input.focus();
-        input.select();
+        // Calculate screen position accounting for canvas transform
+        const screenX = canvasRect.left + (node.x + this.canvasState.offsetX) * this.canvasState.scale;
+        const screenY = canvasRect.top + (node.y + this.canvasState.offsetY) * this.canvasState.scale;
+        const screenWidth = node.width * this.canvasState.scale;
+        const screenHeight = node.height * this.canvasState.scale;
         
-        const finishEditing = () => {
-            node.text = input.value || 'New Node';
-            document.body.removeChild(input);
-            this.canvasState.notifyStateChange();
-            console.log('✏️ Node text updated to:', node.text);
+        // Create textarea for multiline editing
+        const textarea = document.createElement('textarea');
+        textarea.value = node.text || '';
+        textarea.style.cssText = `
+            position: absolute;
+            left: ${screenX}px;
+            top: ${screenY}px;
+            width: ${screenWidth}px;
+            height: ${screenHeight}px;
+            z-index: 1000;
+            background-color: var(--vscode-input-background, #3c3c3c);
+            color: var(--vscode-input-foreground, #cccccc);
+            border: 2px solid var(--vscode-focusBorder, #007fd4);
+            border-radius: 8px;
+            padding: 8px;
+            font-size: 14px;
+            font-family: var(--vscode-font-family, 'Segoe UI');
+            resize: none;
+            outline: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        `;
+        
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        
+        // Set editing state
+        node.isEditing = true;
+        this.canvasState.notifyStateChange();
+        
+        const finishEditing = async () => {
+            if (document.body.contains(textarea)) {
+                node.text = textarea.value || 'New Node';
+                node.isEditing = false;
+                document.body.removeChild(textarea);
+                
+                // Force immediate save to VS Code like file nodes do
+                await this.canvasState.saveCanvasState();
+                console.log('✏️ Node text updated to:', node.text);
+            }
         };
         
-        input.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
+        const cancelEditing = () => {
+            if (document.body.contains(textarea)) {
+                node.isEditing = false;
+                document.body.removeChild(textarea);
+                this.canvasState.notifyStateChange();
+            }
+        };
+        
+        textarea.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                // Ctrl+Enter to save
+                e.preventDefault();
                 finishEditing();
             } else if (e.key === 'Escape') {
-                document.body.removeChild(input);
+                // Escape to cancel
+                e.preventDefault();
+                cancelEditing();
+            } else if (e.key === 'Tab') {
+                // Handle tab indentation
+                e.preventDefault();
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                textarea.value = textarea.value.substring(0, start) + '    ' + textarea.value.substring(end);
+                textarea.selectionStart = textarea.selectionEnd = start + 4;
             }
         });
         
-        input.addEventListener('blur', finishEditing);
+        textarea.addEventListener('blur', finishEditing);
+        
+        // Auto-resize to fit content
+        const autoResize = () => {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.max(screenHeight, textarea.scrollHeight) + 'px';
+        };
+        
+        textarea.addEventListener('input', autoResize);
+        setTimeout(autoResize, 0); // Initial resize
     }
     
-    editFileNode(fileNode) {
+    // Removed editFileNode - using simplified inline editor
+    editFileNodeOld(fileNode) {
         console.log('📝 Starting file edit mode for:', fileNode.file);
         
         // Set editing state
@@ -1330,13 +1407,21 @@ class InputHandler {
         // Set editing state
         fileNode.isEditing = true;
         
-        // Create simple editor container
+        // Create simple editor container with proper canvas coordinates
+        const canvasRect = this.canvas.getBoundingClientRect();
+        
+        // Calculate screen position accounting for canvas transform (content area only)
+        const screenX = canvasRect.left + (fileNode.x + 5) * this.canvasState.scale + this.canvasState.offsetX;
+        const screenY = canvasRect.top + (fileNode.y + 45) * this.canvasState.scale + this.canvasState.offsetY; // +45 for header
+        const screenWidth = (fileNode.width - 10) * this.canvasState.scale;
+        const screenHeight = (fileNode.height - 50) * this.canvasState.scale; // -50 for header + padding
+        
         const editorContainer = document.createElement('div');
         editorContainer.style.position = 'absolute';
-        editorContainer.style.left = (fileNode.x + 5) + 'px';
-        editorContainer.style.top = (fileNode.y + 45) + 'px';
-        editorContainer.style.width = (fileNode.width - 10) + 'px';
-        editorContainer.style.height = (fileNode.height - 50) + 'px';
+        editorContainer.style.left = screenX + 'px';
+        editorContainer.style.top = screenY + 'px';
+        editorContainer.style.width = screenWidth + 'px';
+        editorContainer.style.height = screenHeight + 'px';
         editorContainer.style.zIndex = '1000';
         editorContainer.style.backgroundColor = '#2d2d2d';
         editorContainer.style.border = '2px solid #007fd4';
@@ -2767,12 +2852,17 @@ class UIManager {
             const node = selectedNodes[0];
             const canvasRect = this.canvas.canvas.getBoundingClientRect();
             
-            // Calculate position in screen coordinates
-            const screenX = canvasRect.left + (node.x + node.width / 2 + this.canvas.canvasState.offsetX) * this.canvas.canvasState.scale;
-            const screenY = canvasRect.top + (node.y - 40 + this.canvas.canvasState.offsetY) * this.canvas.canvasState.scale;
+            // Calculate position in screen coordinates - fix coordinate calculation
+            const screenX = canvasRect.left + (node.x + node.width / 2) * this.canvas.canvasState.scale + this.canvas.canvasState.offsetX;
+            const screenY = canvasRect.top + (node.y - 40) * this.canvas.canvasState.scale + this.canvas.canvasState.offsetY;
             
-            this.floatingGenerateBtn.style.left = `${screenX}px`;
-            this.floatingGenerateBtn.style.top = `${screenY}px`;
+            // Ensure button stays within viewport bounds
+            const buttonWidth = 120; // approximate button width
+            const clampedX = Math.max(buttonWidth / 2, Math.min(window.innerWidth - buttonWidth / 2, screenX));
+            const clampedY = Math.max(50, screenY); // Keep 50px from top
+            
+            this.floatingGenerateBtn.style.left = `${clampedX}px`;
+            this.floatingGenerateBtn.style.top = `${clampedY}px`;
             this.floatingGenerateBtn.style.display = 'block';
             
             // Add generating state visual feedback
