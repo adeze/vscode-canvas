@@ -6,7 +6,7 @@ Transform the infinite canvas web application into a VS Code extension that can 
 
 **Goal**: Adapt the existing infinite canvas web app to work as a VS Code extension, allowing users to open and edit canvas files directly within VS Code.
 
-**Status**: ✅ Phase 1 Complete - Basic Extension Implemented
+**Status**: ✅ Phase 2 Complete - Enhanced Extension with Markdown Support
 
 ## Quick Start
 
@@ -29,14 +29,45 @@ npm run compile
 ```
 
 ### Basic Usage
-- **Double-click empty space**: Create new node
-- **Double-click node**: Edit text
+- **Double-click empty space**: Create new text node
+- **Double-click text node**: Edit text inline
+- **Double-click .md file node**: Edit markdown content
 - **Drag nodes**: Move around canvas
 - **Mouse wheel**: Zoom in/out
 - **Drag background**: Pan canvas
 - **Delete key**: Remove selected nodes
+- **Drag & drop files**: Create file nodes from workspace files
 
 📖 See [DEVELOPMENT.md](./DEVELOPMENT.md) for detailed development guide.
+
+## 🚀 Recent Features Added
+
+### ✨ Markdown File Support
+- **File node referencing**: Create nodes that reference workspace files
+- **Markdown editing**: Double-click .md nodes to edit content directly in canvas
+- **Enhanced rendering**: Rich markdown preview with syntax highlighting
+- **Real-time sync**: Changes save automatically to workspace files
+
+### 🎯 Simplified Editor Experience
+- **One-click editing**: Double-click any .md node to start editing
+- **Clean interface**: Removed complex toolbar for distraction-free editing
+- **Keyboard shortcuts**: 
+  - `Ctrl+Enter` / `Cmd+Enter` to save
+  - `Esc` to cancel
+  - `Tab` for indentation
+- **Click outside to save**: Convenient auto-save when clicking elsewhere
+
+### ⚡ Performance Improvements
+- **On-demand rendering**: Optimized render system prevents infinite loops
+- **Smooth interactions**: Fixed panning, zooming, and viewport issues
+- **Error resilience**: Robust markdown rendering with graceful fallbacks
+- **Memory efficient**: Render-on-demand system reduces resource usage
+
+### 🔧 Technical Enhancements
+- **Viewport preservation**: Pan/zoom state maintained during file operations
+- **Async module loading**: Proper initialization prevents render conflicts
+- **Enhanced error handling**: Comprehensive error recovery and logging
+- **Improved state management**: Better synchronization between components
 
 ## Obsidian Compatibility
 
