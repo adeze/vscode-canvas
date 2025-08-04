@@ -1,0 +1,27 @@
+{
+  "nodes": [
+    {
+      "id": "unified-config-demo",
+      "type": "text",
+      "text": "🎯 Unified Configuration Panel\n\n✅ Single source of truth for all AI settings\n\n📌 Click the ⚙️ button (top-left) to access:\n\n• Base URL (OpenRouter, OpenAI, Local, Custom)\n• API Key (secure password field)\n• AI Models (add/remove models)\n• All settings in one place!\n\nNo more confusing multiple panels! 🚀",
+      "x": 100,
+      "y": 100,
+      "width": 350,
+      "height": 220,
+      "maxHeight": 220,
+      "scrollY": 0
+    },
+    {
+      "id": "test-ai-generation",
+      "type": "text", 
+      "text": "🤖 Test AI Generation\n\nSelect this node and click 'Generate Ideas' to test your configured AI endpoint!",
+      "x": 500,
+      "y": 150,
+      "width": 250,
+      "height": 120,
+      "maxHeight": 120,
+      "scrollY": 0
+    }
+  ],
+  "edges": []
+}

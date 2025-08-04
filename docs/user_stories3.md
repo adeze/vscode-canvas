@@ -12,9 +12,6 @@ bug is see:
     also the generate "generate ideaas" buttons not always appear on top of the node, its appear randomly on the canvas, make it appear always on top of the node, 
 
 
-
-
-
     lets also add a base url in the panel, put the url openrouter as default, but the user can change it so he can use other base url and other api keys ,
     also this panel should appear only when i click config button, i mean lets add a config button that makes appear and disappear , this ways only show when i want 
 

@@ -2424,7 +2424,8 @@ class UIManager {
     setupUI() {
         this.createFloatingGenerateButton();
         this.createNotificationContainer();
-        this.createModelSelectionPanel();
+        this.createConfigButton();
+        this.createConfigPanel();
         console.log('🎨 UI Manager setup completed');
     }
     
@@ -2473,70 +2474,202 @@ class UIManager {
         this.floatingGenerateBtn = generateBtn;
     }
     
-    createModelSelectionPanel() {
-        // Create a smaller model selection panel (togglable)
-        const controlsContainer = document.createElement('div');
-        controlsContainer.id = 'ai-model-controls';
-        controlsContainer.style.cssText = `
+    createConfigButton() {
+        // Create config button in top-left corner
+        const configBtn = document.createElement('button');
+        configBtn.id = 'config-button';
+        configBtn.innerHTML = '⚙️';
+        configBtn.title = 'Configuration';
+        configBtn.style.cssText = `
             position: fixed;
             top: 20px;
-            right: 20px;
-            background: rgba(45, 45, 45, 0.95);
+            left: 20px;
+            width: 40px;
+            height: 40px;
+            background: rgba(45, 45, 45, 0.9);
             border: 1px solid #666;
             border-radius: 8px;
-            padding: 12px;
-            z-index: 1000;
-            backdrop-filter: blur(10px);
-            min-width: 200px;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        `;
-        
-        // Title with toggle
-        const header = document.createElement('div');
-        header.style.cssText = `
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        `;
-        
-        const title = document.createElement('h4');
-        title.textContent = '🤖 AI Models';
-        title.style.cssText = `
-            margin: 0;
             color: #e0e0e0;
-            font-size: 14px;
-            font-weight: 600;
-        `;
-        
-        const toggleBtn = document.createElement('button');
-        toggleBtn.textContent = '−';
-        toggleBtn.style.cssText = `
-            background: none;
-            border: none;
-            color: #888;
-            cursor: pointer;
             font-size: 16px;
-            padding: 0;
-            width: 20px;
-            height: 20px;
+            cursor: pointer;
+            z-index: 1001;
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(10px);
         `;
         
-        header.appendChild(title);
-        header.appendChild(toggleBtn);
-        controlsContainer.appendChild(header);
+        configBtn.addEventListener('mouseenter', () => {
+            configBtn.style.background = 'rgba(60, 60, 60, 0.95)';
+            configBtn.style.transform = 'scale(1.05)';
+        });
         
-        // Model checkboxes container
+        configBtn.addEventListener('mouseleave', () => {
+            configBtn.style.background = 'rgba(45, 45, 45, 0.9)';
+            configBtn.style.transform = 'scale(1)';
+        });
+        
+        configBtn.addEventListener('click', () => {
+            this.toggleConfigPanel();
+        });
+        
+        document.body.appendChild(configBtn);
+        this.configButton = configBtn;
+    }
+    
+    createConfigPanel() {
+        // Create configuration panel (initially hidden)
+        const configPanel = document.createElement('div');
+        configPanel.id = 'config-panel';
+        configPanel.style.cssText = `
+            position: fixed;
+            top: 70px;
+            left: 20px;
+            background: rgba(45, 45, 45, 0.95);
+            border: 1px solid #666;
+            border-radius: 8px;
+            padding: 16px;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            min-width: 300px;
+            max-width: 400px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: none;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        `;
+        
+        // Title
+        const title = document.createElement('h3');
+        title.textContent = '⚙️ AI Configuration';
+        title.style.cssText = `
+            margin: 0 0 16px 0;
+            color: #e0e0e0;
+            font-size: 16px;
+            font-weight: 600;
+            border-bottom: 1px solid #555;
+            padding-bottom: 8px;
+        `;
+        
+        // Base URL section
+        const baseUrlSection = document.createElement('div');
+        baseUrlSection.style.cssText = `margin-bottom: 16px;`;
+        
+        const baseUrlLabel = document.createElement('label');
+        baseUrlLabel.textContent = 'Base URL:';
+        baseUrlLabel.style.cssText = `
+            display: block;
+            color: #d0d0d0;
+            font-size: 12px;
+            font-weight: 500;
+            margin-bottom: 4px;
+        `;
+        
+        // Add preset buttons
+        const presetsContainer = document.createElement('div');
+        presetsContainer.style.cssText = `
+            display: flex;
+            gap: 4px;
+            margin-bottom: 6px;
+            flex-wrap: wrap;
+        `;
+        
+        const presets = [
+            { name: 'OpenRouter', url: 'https://openrouter.ai/api/v1' },
+            { name: 'OpenAI', url: 'https://api.openai.com/v1' },
+            { name: 'Local', url: 'http://localhost:1234/v1' }
+        ];
+        
+        const baseUrlInput = document.createElement('input');
+        baseUrlInput.type = 'text';
+        baseUrlInput.id = 'base-url-input';
+        baseUrlInput.value = localStorage.getItem('ai-base-url') || 'https://openrouter.ai/api/v1';
+        baseUrlInput.placeholder = 'https://openrouter.ai/api/v1';
+        baseUrlInput.style.cssText = `
+            width: 100%;
+            padding: 8px;
+            background: rgba(30, 30, 30, 0.8);
+            border: 1px solid #555;
+            border-radius: 4px;
+            color: #e0e0e0;
+            font-size: 12px;
+            box-sizing: border-box;
+        `;
+        
+        presets.forEach(preset => {
+            const presetBtn = document.createElement('button');
+            presetBtn.textContent = preset.name;
+            presetBtn.style.cssText = `
+                padding: 2px 6px;
+                background: rgba(50, 50, 50, 0.8);
+                border: 1px solid #666;
+                border-radius: 3px;
+                color: #ccc;
+                font-size: 10px;
+                cursor: pointer;
+            `;
+            
+            presetBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                baseUrlInput.value = preset.url;
+            });
+            
+            presetsContainer.appendChild(presetBtn);
+        });
+        
+        // API Key section
+        const apiKeySection = document.createElement('div');
+        apiKeySection.style.cssText = `margin-bottom: 16px;`;
+        
+        const apiKeyLabel = document.createElement('label');
+        apiKeyLabel.textContent = 'API Key:';
+        apiKeyLabel.style.cssText = `
+            display: block;
+            color: #d0d0d0;
+            font-size: 12px;
+            font-weight: 500;
+            margin-bottom: 4px;
+        `;
+        
+        const apiKeyInput = document.createElement('input');
+        apiKeyInput.type = 'password';
+        apiKeyInput.id = 'api-key-input';
+        apiKeyInput.value = localStorage.getItem('ai-api-key') || '';
+        apiKeyInput.placeholder = 'Enter your API key';
+        apiKeyInput.style.cssText = `
+            width: 100%;
+            padding: 8px;
+            background: rgba(30, 30, 30, 0.8);
+            border: 1px solid #555;
+            border-radius: 4px;
+            color: #e0e0e0;
+            font-size: 12px;
+            box-sizing: border-box;
+        `;
+        
+        // AI Models section
+        const modelsSection = document.createElement('div');
+        modelsSection.style.cssText = `margin-bottom: 16px;`;
+        
+        const modelsLabel = document.createElement('label');
+        modelsLabel.textContent = 'AI Models:';
+        modelsLabel.style.cssText = `
+            display: block;
+            color: #d0d0d0;
+            font-size: 12px;
+            font-weight: 500;
+            margin-bottom: 6px;
+        `;
+        
+        // Models container
         const modelsContainer = document.createElement('div');
-        modelsContainer.id = 'models-container';
         modelsContainer.style.cssText = `
             background: rgba(30, 30, 30, 0.7);
+            border: 1px solid #555;
             border-radius: 4px;
             padding: 8px;
-            margin-bottom: 8px;
+            max-height: 120px;
+            overflow-y: auto;
         `;
         
         // Add model input section
@@ -2544,7 +2677,7 @@ class UIManager {
         addModelSection.style.cssText = `
             display: flex;
             gap: 4px;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             align-items: center;
         `;
         
@@ -2555,7 +2688,7 @@ class UIManager {
             flex: 1;
             padding: 4px 6px;
             background: rgba(50, 50, 50, 0.8);
-            border: 1px solid #555;
+            border: 1px solid #666;
             border-radius: 3px;
             color: #d0d0d0;
             font-size: 10px;
@@ -2574,6 +2707,10 @@ class UIManager {
             font-weight: bold;
         `;
         
+        // Add models list container
+        this.modelsListContainer = document.createElement('div');
+        this.modelsListContainer.id = 'models-list-container';
+        
         addButton.addEventListener('click', () => {
             const modelName = modelInput.value.trim();
             if (modelName) {
@@ -2591,112 +2728,102 @@ class UIManager {
         addModelSection.appendChild(modelInput);
         addModelSection.appendChild(addButton);
         modelsContainer.appendChild(addModelSection);
-        
-        // Add models list container
-        this.modelsListContainer = document.createElement('div');
-        this.modelsListContainer.id = 'models-list-container';
         modelsContainer.appendChild(this.modelsListContainer);
         
-        // Initialize and render models
+        modelsSection.appendChild(modelsLabel);
+        modelsSection.appendChild(modelsContainer);
+        
+        // Initialize models
         this.initializeDefaultModels();
         this.refreshModelsList();
         
-        controlsContainer.appendChild(modelsContainer);
-        
-        // API Key input section
-        const apiKeySection = document.createElement('div');
-        apiKeySection.style.cssText = `
-            margin-bottom: 8px;
+        // Buttons section
+        const buttonsSection = document.createElement('div');
+        buttonsSection.style.cssText = `
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
         `;
         
-        const apiKeyLabel = document.createElement('label');
-        apiKeyLabel.textContent = 'API Key:';
-        apiKeyLabel.style.cssText = `
-            display: block;
-            color: #b0b0b0;
-            font-size: 10px;
-            margin-bottom: 4px;
+        const saveButton = document.createElement('button');
+        saveButton.textContent = 'Save';
+        saveButton.style.cssText = `
+            padding: 6px 12px;
+            background: #667eea;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            font-size: 12px;
+            cursor: pointer;
             font-weight: 500;
         `;
-        apiKeySection.appendChild(apiKeyLabel);
         
-        const apiKeyInput = document.createElement('input');
-        apiKeyInput.type = 'password';
-        apiKeyInput.id = 'openrouter-api-key';
-        apiKeyInput.placeholder = 'sk-or-v1-...';
-        apiKeyInput.style.cssText = `
-            width: 100%;
-            padding: 6px 8px;
-            background: rgba(30, 30, 30, 0.7);
-            border: 1px solid #666;
+        const cancelButton = document.createElement('button');
+        cancelButton.textContent = 'Cancel';
+        cancelButton.style.cssText = `
+            padding: 6px 12px;
+            background: #666;
+            border: none;
             border-radius: 4px;
-            color: #e0e0e0;
-            font-size: 10px;
-            font-family: monospace;
-            box-sizing: border-box;
+            color: white;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: 500;
         `;
         
-        // Load saved API key
-        const savedApiKey = localStorage.getItem('openrouter_api_key') || '';
-        if (savedApiKey) {
-            apiKeyInput.value = savedApiKey;
-            // Set the API key in the service
-            if (window.setOpenRouterApiKey) {
-                window.setOpenRouterApiKey(savedApiKey);
-            }
-        }
-        
-        // Save API key on change
-        apiKeyInput.addEventListener('input', () => {
+        // Event handlers
+        saveButton.addEventListener('click', () => {
+            const baseUrl = baseUrlInput.value.trim();
             const apiKey = apiKeyInput.value.trim();
-            localStorage.setItem('openrouter_api_key', apiKey);
             
-            // Update the API key in the service
-            if (window.setOpenRouterApiKey) {
-                window.setOpenRouterApiKey(apiKey);
+            if (baseUrl) {
+                localStorage.setItem('ai-base-url', baseUrl);
+            }
+            if (apiKey) {
+                localStorage.setItem('ai-api-key', apiKey);
             }
             
-            // Update status indicator
-            const statusDiv = document.getElementById('ai-status');
-            if (statusDiv) {
-                statusDiv.textContent = apiKey ? 'OpenRouter (Ready)' : 'OpenRouter (No API Key)';
-                statusDiv.style.color = apiKey ? '#10b981' : '#ef4444';
-            }
+            this.showNotification('Configuration saved successfully!', 'success');
+            this.toggleConfigPanel();
         });
         
+        cancelButton.addEventListener('click', () => {
+            // Reset to saved values
+            baseUrlInput.value = localStorage.getItem('ai-base-url') || 'https://openrouter.ai/api/v1';
+            apiKeyInput.value = localStorage.getItem('ai-api-key') || '';
+            this.toggleConfigPanel();
+        });
+        
+        // Assemble the panel
+        baseUrlSection.appendChild(baseUrlLabel);
+        baseUrlSection.appendChild(presetsContainer);
+        baseUrlSection.appendChild(baseUrlInput);
+        apiKeySection.appendChild(apiKeyLabel);
         apiKeySection.appendChild(apiKeyInput);
-        controlsContainer.appendChild(apiKeySection);
+        buttonsSection.appendChild(cancelButton);
+        buttonsSection.appendChild(saveButton);
         
-        // Status indicator
-        const statusDiv = document.createElement('div');
-        statusDiv.id = 'ai-status';
-        statusDiv.style.cssText = `
-            font-size: 10px;
-            color: #888;
-            text-align: center;
-            padding: 4px;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 4px;
-        `;
+        configPanel.appendChild(title);
+        configPanel.appendChild(baseUrlSection);
+        configPanel.appendChild(apiKeySection);
+        configPanel.appendChild(modelsSection);
+        configPanel.appendChild(buttonsSection);
         
-        // Set initial status based on API key presence
-        const hasApiKey = savedApiKey && savedApiKey.length > 0;
-        statusDiv.textContent = hasApiKey ? 'OpenRouter (Ready)' : 'OpenRouter (No API Key)';
-        statusDiv.style.color = hasApiKey ? '#10b981' : '#ef4444';
-        
-        controlsContainer.appendChild(statusDiv);
-        
-        // Toggle functionality
-        let isCollapsed = false;
-        toggleBtn.addEventListener('click', () => {
-            isCollapsed = !isCollapsed;
-            modelsContainer.style.display = isCollapsed ? 'none' : 'block';
-            statusDiv.style.display = isCollapsed ? 'none' : 'block';
-            toggleBtn.textContent = isCollapsed ? '+' : '−';
-        });
-        
-        document.body.appendChild(controlsContainer);
+        document.body.appendChild(configPanel);
+        this.configPanel = configPanel;
     }
+    
+    toggleConfigPanel() {
+        if (this.configPanel.style.display === 'none') {
+            this.configPanel.style.display = 'block';
+            this.configButton.style.background = 'rgba(60, 60, 60, 0.95)';
+        } else {
+            this.configPanel.style.display = 'none';
+            this.configButton.style.background = 'rgba(45, 45, 45, 0.9)';
+        }
+    }
+    
+    // Removed old createModelSelectionPanel - models now managed in unified config panel
     
     createNotificationContainer() {
         const container = document.createElement('div');

@@ -63,12 +63,18 @@ if (typeof window !== 'undefined') {
 }
 
 export async function generateAIIdeasGroq(selectedNodeText, connectedNodes = [], model = 'anthropic/claude-3.5-sonnet', fileContent = null) {
-    console.log('🎯 Using OpenRouter');
+    console.log('🎯 Using configurable AI service');
     console.log('🤖 Model:', model);
 
+    // Get configurable settings from localStorage
+    const baseUrl = localStorage.getItem('ai-base-url') || 'https://openrouter.ai/api/v1';
+    const apiKey = localStorage.getItem('ai-api-key') || OPENROUTER_API_KEY;
+    
+    console.log('🌐 Base URL:', baseUrl);
+
     // Check if API key is available
-    if (!OPENROUTER_API_KEY) {
-        console.warn('❌ OpenRouter API key not available, using mock response');
+    if (!apiKey) {
+        console.warn('❌ API key not available, using mock response');
         return generateMockResponse(selectedNodeText, model, fileContent);
     }
 
@@ -96,11 +102,14 @@ export async function generateAIIdeasGroq(selectedNodeText, connectedNodes = [],
     console.log('💬 Message history:', messages.map(m => m.content.substring(0, 100) + (m.content.length > 100 ? '...' : '')));
 
     try {
-        // Use fetch API since we're in a browser environment
-        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        // Use fetch API with configurable base URL
+        const apiUrl = `${baseUrl}/chat/completions`;
+        console.log('📡 Making request to:', apiUrl);
+        
+        const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json',
                 'HTTP-Referer': 'https://vscode-infinite-canvas.com',
                 'X-Title': 'VS Code Infinite Canvas'

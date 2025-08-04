@@ -1,0 +1,38 @@
+{
+  "nodes": [
+    {
+      "id": "config-demo-1",
+      "type": "text",
+      "text": "🎯 Configuration Panel Test\n\n1. Click the ⚙️ button in the top-left corner\n2. The configuration panel should appear\n3. You can set a custom Base URL (default: OpenRouter)\n4. You can set an API key\n5. Click Save to store settings\n6. Click Cancel to reset\n7. Click ⚙️ again to hide the panel",
+      "x": 100,
+      "y": 100,
+      "width": 350,
+      "height": 200,
+      "maxHeight": 200,
+      "scrollY": 0
+    },
+    {
+      "id": "config-demo-2",
+      "type": "text",
+      "text": "🔧 Supported Base URLs:\n\n• OpenRouter: https://openrouter.ai/api/v1\n• OpenAI: https://api.openai.com/v1\n• Azure OpenAI: https://your-resource.openai.azure.com\n• Any compatible endpoint\n\nThe settings are saved to localStorage and persist between sessions.",
+      "x": 500,
+      "y": 100,
+      "width": 300,
+      "height": 180,
+      "maxHeight": 180,
+      "scrollY": 0
+    },
+    {
+      "id": "ai-test-node",
+      "type": "text",
+      "text": "🤖 Select me and try generating ideas to test the configured API endpoint!",
+      "x": 300,
+      "y": 350,
+      "width": 250,
+      "height": 120,
+      "maxHeight": 120,
+      "scrollY": 0
+    }
+  ],
+  "edges": []
+}
