@@ -6,20 +6,20 @@ export class AIManager {
         this.canvasState = canvasState;
         this.uiManager = uiManager;
         
-        // AI configuration - simplified for VS Code extension
-        this.demoMode = true; // Always use demo mode for VS Code extension
-        this.demoModels = 'llama-3.3-70b-versatile,qwen-qwq-32b,gemma2-9b-it';
-        this.aiModels = this.demoModels;
+        // AI configuration - using OpenRouter
+        this.demoMode = false; // Using OpenRouter instead of demo mode
+        this.openRouterModels = 'anthropic/claude-3.5-sonnet,openai/gpt-4o,meta-llama/llama-3.1-8b-instruct';
+        this.aiModels = this.openRouterModels;
         this.activeModels = JSON.parse(localStorage.getItem('ai_active_models') || '{}');
         
-        // Ensure demo models are active by default
-        this.demoModels.split(',').map(m => m.trim()).forEach(model => {
+        // Ensure OpenRouter models are active by default
+        this.openRouterModels.split(',').map(m => m.trim()).forEach(model => {
             if (!(model in this.activeModels)) {
                 this.activeModels[model] = true;
             }
         });
         
-        console.log('🤖 AIManager initialized for VS Code with demo models:', this.activeModels);
+        console.log('🤖 AIManager initialized for VS Code with OpenRouter models:', this.activeModels);
     }
     
     // AI text generation - simplified for VS Code
@@ -113,7 +113,7 @@ export class AIManager {
                 }
             };
 
-            const modelResults = await this.generateAIIdeasMultipleModelsGroq(
+            const modelResults = await this.generateAIIdeasMultipleModelsOpenRouter(
                 sourceNode.text,
                 ancestorNodes,
                 models,
@@ -180,8 +180,8 @@ export class AIManager {
         return ancestors;
     }
     
-    // Simplified Groq-based AI generation for multiple models
-    async generateAIIdeasMultipleModelsGroq(selectedNodeText, connectedNodes = [], models = [], onModelComplete = null) {
+    // OpenRouter-based AI generation for multiple models
+    async generateAIIdeasMultipleModelsOpenRouter(selectedNodeText, connectedNodes = [], models = [], onModelComplete = null) {
         if (!models || models.length === 0) {
             throw new Error('No models specified');
         }
@@ -192,12 +192,12 @@ export class AIManager {
             throw new Error('No valid models specified');
         }
 
-        console.log(`🚀 Starting parallel Groq generation with ${trimmedModels.length} models:`, trimmedModels);
+        console.log(`🚀 Starting parallel OpenRouter generation with ${trimmedModels.length} models:`, trimmedModels);
 
         // Create promises for all models to run in parallel
         const modelPromises = trimmedModels.map(async (model) => {
             try {
-                console.log(`🤖 Starting Groq generation with model: ${model}`);
+                console.log(`🤖 Starting OpenRouter generation with model: ${model}`);
                 const ideas = await generateAIIdeasGroq(selectedNodeText, connectedNodes, model);
 
                 const result = {
@@ -216,14 +216,14 @@ export class AIManager {
                     }
                 }
 
-                console.log(`✅ Completed Groq generation with model: ${model}`);
+                console.log(`✅ Completed OpenRouter generation with model: ${model}`);
                 return result;
             } catch (error) {
-                console.error(`❌ Error with Groq model ${model}:`, error.message);
+                console.error(`❌ Error with OpenRouter model ${model}:`, error.message);
 
                 const result = {
                     model: model,
-                    ideas: [`Groq demo error with ${model}: ${error.message}`],
+                    ideas: [`OpenRouter error with ${model}: ${error.message}`],
                     success: false,
                     error: true,
                     errorMessage: error.message,
@@ -267,7 +267,7 @@ export class AIManager {
         const successCount = finalResults.filter(r => r.success).length;
         const errorCount = finalResults.filter(r => !r.success).length;
 
-        console.log(`🏁 Parallel Groq generation completed: ${successCount} successful, ${errorCount} failed`);
+        console.log(`🏁 Parallel OpenRouter generation completed: ${successCount} successful, ${errorCount} failed`);
 
         return finalResults;
     }
@@ -284,6 +284,6 @@ export class AIManager {
     }
     
     getProviderName() {
-        return 'Demo Mode (Groq)';
+        return 'OpenRouter';
     }
 }

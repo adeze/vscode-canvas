@@ -2071,45 +2071,133 @@ class UIManager {
             margin-bottom: 8px;
         `;
         
-        // Add model checkboxes
-        const models = ['llama-3.3-70b-versatile', 'qwen-qwq-32b', 'gemma2-9b-it'];
-        models.forEach(model => {
-            const modelDiv = document.createElement('div');
-            modelDiv.style.cssText = `
-                display: flex;
-                align-items: center;
-                margin-bottom: 4px;
-            `;
-            
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.id = `model-${model}`;
-            checkbox.checked = true; // Default to checked
-            checkbox.style.cssText = `
-                margin-right: 6px;
-                accent-color: #667eea;
-            `;
-            
-            const label = document.createElement('label');
-            label.htmlFor = `model-${model}`;
-            label.textContent = model.split('-')[0]; // Show simplified name
-            label.style.cssText = `
-                color: #d0d0d0;
-                font-size: 10px;
-                cursor: pointer;
-                user-select: none;
-            `;
-            
-            checkbox.addEventListener('change', () => {
-                this.updateModelSelection(model, checkbox.checked);
-            });
-            
-            modelDiv.appendChild(checkbox);
-            modelDiv.appendChild(label);
-            modelsContainer.appendChild(modelDiv);
+        // Add model input section
+        const addModelSection = document.createElement('div');
+        addModelSection.style.cssText = `
+            display: flex;
+            gap: 4px;
+            margin-bottom: 8px;
+            align-items: center;
+        `;
+        
+        const modelInput = document.createElement('input');
+        modelInput.type = 'text';
+        modelInput.placeholder = 'e.g. openai/gpt-4o';
+        modelInput.style.cssText = `
+            flex: 1;
+            padding: 4px 6px;
+            background: rgba(50, 50, 50, 0.8);
+            border: 1px solid #555;
+            border-radius: 3px;
+            color: #d0d0d0;
+            font-size: 10px;
+        `;
+        
+        const addButton = document.createElement('button');
+        addButton.textContent = '+';
+        addButton.style.cssText = `
+            padding: 4px 8px;
+            background: #667eea;
+            border: none;
+            border-radius: 3px;
+            color: white;
+            font-size: 10px;
+            cursor: pointer;
+            font-weight: bold;
+        `;
+        
+        addButton.addEventListener('click', () => {
+            const modelName = modelInput.value.trim();
+            if (modelName) {
+                this.addModel(modelName);
+                modelInput.value = '';
+            }
         });
         
+        modelInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                addButton.click();
+            }
+        });
+        
+        addModelSection.appendChild(modelInput);
+        addModelSection.appendChild(addButton);
+        modelsContainer.appendChild(addModelSection);
+        
+        // Add models list container
+        this.modelsListContainer = document.createElement('div');
+        this.modelsListContainer.id = 'models-list-container';
+        modelsContainer.appendChild(this.modelsListContainer);
+        
+        // Initialize and render models
+        this.initializeDefaultModels();
+        this.refreshModelsList();
+        
         controlsContainer.appendChild(modelsContainer);
+        
+        // API Key input section
+        const apiKeySection = document.createElement('div');
+        apiKeySection.style.cssText = `
+            margin-bottom: 8px;
+        `;
+        
+        const apiKeyLabel = document.createElement('label');
+        apiKeyLabel.textContent = 'API Key:';
+        apiKeyLabel.style.cssText = `
+            display: block;
+            color: #b0b0b0;
+            font-size: 10px;
+            margin-bottom: 4px;
+            font-weight: 500;
+        `;
+        apiKeySection.appendChild(apiKeyLabel);
+        
+        const apiKeyInput = document.createElement('input');
+        apiKeyInput.type = 'password';
+        apiKeyInput.id = 'openrouter-api-key';
+        apiKeyInput.placeholder = 'sk-or-v1-...';
+        apiKeyInput.style.cssText = `
+            width: 100%;
+            padding: 6px 8px;
+            background: rgba(30, 30, 30, 0.7);
+            border: 1px solid #666;
+            border-radius: 4px;
+            color: #e0e0e0;
+            font-size: 10px;
+            font-family: monospace;
+            box-sizing: border-box;
+        `;
+        
+        // Load saved API key
+        const savedApiKey = localStorage.getItem('openrouter_api_key') || '';
+        if (savedApiKey) {
+            apiKeyInput.value = savedApiKey;
+            // Set the API key in the service
+            if (window.setOpenRouterApiKey) {
+                window.setOpenRouterApiKey(savedApiKey);
+            }
+        }
+        
+        // Save API key on change
+        apiKeyInput.addEventListener('input', () => {
+            const apiKey = apiKeyInput.value.trim();
+            localStorage.setItem('openrouter_api_key', apiKey);
+            
+            // Update the API key in the service
+            if (window.setOpenRouterApiKey) {
+                window.setOpenRouterApiKey(apiKey);
+            }
+            
+            // Update status indicator
+            const statusDiv = document.getElementById('ai-status');
+            if (statusDiv) {
+                statusDiv.textContent = apiKey ? 'OpenRouter (Ready)' : 'OpenRouter (No API Key)';
+                statusDiv.style.color = apiKey ? '#10b981' : '#ef4444';
+            }
+        });
+        
+        apiKeySection.appendChild(apiKeyInput);
+        controlsContainer.appendChild(apiKeySection);
         
         // Status indicator
         const statusDiv = document.createElement('div');
@@ -2122,7 +2210,12 @@ class UIManager {
             background: rgba(0, 0, 0, 0.3);
             border-radius: 4px;
         `;
-        statusDiv.textContent = 'Demo Mode';
+        
+        // Set initial status based on API key presence
+        const hasApiKey = savedApiKey && savedApiKey.length > 0;
+        statusDiv.textContent = hasApiKey ? 'OpenRouter (Ready)' : 'OpenRouter (No API Key)';
+        statusDiv.style.color = hasApiKey ? '#10b981' : '#ef4444';
+        
         controlsContainer.appendChild(statusDiv);
         
         // Toggle functionality
@@ -2157,6 +2250,128 @@ class UIManager {
             this.canvas.aiManager.setActiveModels(activeModels);
             console.log(`🔧 Model ${model} ${isActive ? 'enabled' : 'disabled'}`);
         }
+    }
+    
+    // Model management helper methods
+    getStoredModels() {
+        const stored = localStorage.getItem('aiModels');
+        return stored ? JSON.parse(stored) : null;
+    }
+    
+    initializeDefaultModels() {
+        const existing = this.getStoredModels();
+        if (!existing) {
+            const defaultModels = [
+                'google/gemini-2.5-flash',
+                'qwen/qwen3-235b-a22b-thinking-2507',
+                'openai/gpt-4o',
+                'anthropic/claude-3.5-sonnet'
+            ];
+            localStorage.setItem('aiModels', JSON.stringify(defaultModels));
+        }
+    }
+    
+    addModel(modelName) {
+        const models = this.getStoredModels() || [];
+        if (!models.includes(modelName)) {
+            models.push(modelName);
+            localStorage.setItem('aiModels', JSON.stringify(models));
+            this.refreshModelsList();
+            console.log(`✅ Added model: ${modelName}`);
+        } else {
+            console.log(`⚠️ Model already exists: ${modelName}`);
+        }
+    }
+    
+    removeModel(modelName) {
+        const models = this.getStoredModels() || [];
+        const index = models.indexOf(modelName);
+        if (index > -1) {
+            models.splice(index, 1);
+            localStorage.setItem('aiModels', JSON.stringify(models));
+            this.refreshModelsList();
+            console.log(`🗑️ Removed model: ${modelName}`);
+        }
+    }
+    
+    refreshModelsList() {
+        if (!this.modelsListContainer) return;
+        
+        // Clear existing models
+        this.modelsListContainer.innerHTML = '';
+        
+        const models = this.getStoredModels() || [];
+        models.forEach(model => {
+            const modelDiv = document.createElement('div');
+            modelDiv.style.cssText = `
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 4px;
+                padding: 2px;
+                background: rgba(40, 40, 40, 0.5);
+                border-radius: 3px;
+            `;
+            
+            const leftSection = document.createElement('div');
+            leftSection.style.cssText = `
+                display: flex;
+                align-items: center;
+                flex: 1;
+            `;
+            
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = `model-${model}`;
+            checkbox.checked = true; // Default to checked
+            checkbox.style.cssText = `
+                margin-right: 6px;
+                accent-color: #667eea;
+            `;
+            
+            const label = document.createElement('label');
+            label.htmlFor = `model-${model}`;
+            label.textContent = model.split('/')[1] || model; // Show model name after slash
+            label.style.cssText = `
+                color: #d0d0d0;
+                font-size: 10px;
+                cursor: pointer;
+                user-select: none;
+                flex: 1;
+            `;
+            
+            checkbox.addEventListener('change', () => {
+                this.updateModelSelection(model, checkbox.checked);
+            });
+            
+            // Remove button
+            const removeBtn = document.createElement('button');
+            removeBtn.textContent = '×';
+            removeBtn.style.cssText = `
+                background: #ff4444;
+                border: none;
+                border-radius: 2px;
+                color: white;
+                width: 16px;
+                height: 16px;
+                font-size: 10px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin-left: 4px;
+            `;
+            
+            removeBtn.addEventListener('click', () => {
+                this.removeModel(model);
+            });
+            
+            leftSection.appendChild(checkbox);
+            leftSection.appendChild(label);
+            modelDiv.appendChild(leftSection);
+            modelDiv.appendChild(removeBtn);
+            this.modelsListContainer.appendChild(modelDiv);
+        });
     }
     
     updateFloatingButton() {

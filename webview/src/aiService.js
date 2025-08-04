@@ -1,8 +1,8 @@
 // AI Service Module for VS Code Extension
-// Simplified version focused on demo mode with Groq API
+// Using OpenRouter for AI model access
 
 export function getProviderName(baseURL) {
-    return 'Demo Mode (Groq)';
+    return 'OpenRouter';
 }
 
 export function getErrorMessage(error) {
@@ -33,21 +33,21 @@ export function getErrorMessage(error) {
 }
 
 // ============================================================================
-// GROQ API FUNCTIONS (Demo Mode - Free, Ultra-Fast Inference)
+// OPENROUTER API FUNCTIONS
 // ============================================================================
 
-// Demo Groq API key - using environment variable or fallback to mock
-let DEMO_GROQ_API_KEY = null;
+// OpenRouter API key - using environment variable or fallback to mock
+let OPENROUTER_API_KEY = null;
 
 // Try to get API key from various sources
 if (typeof window !== 'undefined' && window.vsCodeAPI) {
     // Try to get from VS Code environment
     try {
         window.vsCodeAPI.postMessage({
-            type: 'getGroqApiKey'
+            type: 'getOpenRouterApiKey'
         });
     } catch (e) {
-        console.log('Could not request Groq API key from VS Code');
+        console.log('Could not request OpenRouter API key from VS Code');
     }
 }
 
@@ -55,20 +55,20 @@ if (typeof window !== 'undefined' && window.vsCodeAPI) {
 if (typeof window !== 'undefined') {
     window.addEventListener('message', event => {
         const message = event.data;
-        if (message.type === 'groqApiKey') {
-            DEMO_GROQ_API_KEY = message.apiKey;
-            console.log('🔑 Received Groq API key from VS Code extension');
+        if (message.type === 'openRouterApiKey') {
+            OPENROUTER_API_KEY = message.apiKey;
+            console.log('🔑 Received OpenRouter API key from VS Code extension');
         }
     });
 }
 
-export async function generateAIIdeasGroq(selectedNodeText, connectedNodes = [], model = 'llama-3.3-70b-versatile') {
-    console.log('🎯 Using Groq Demo Mode');
+export async function generateAIIdeasGroq(selectedNodeText, connectedNodes = [], model = 'anthropic/claude-3.5-sonnet') {
+    console.log('🎯 Using OpenRouter');
     console.log('🤖 Model:', model);
 
     // Check if API key is available
-    if (!DEMO_GROQ_API_KEY) {
-        console.warn('❌ Groq API key not available, using mock response');
+    if (!OPENROUTER_API_KEY) {
+        console.warn('❌ OpenRouter API key not available, using mock response');
         return generateMockResponse(selectedNodeText, model);
     }
 
@@ -90,11 +90,13 @@ export async function generateAIIdeasGroq(selectedNodeText, connectedNodes = [],
 
     try {
         // Use fetch API since we're in a browser environment
-        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${DEMO_GROQ_API_KEY}`,
-                'Content-Type': 'application/json'
+                'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                'Content-Type': 'application/json',
+                'HTTP-Referer': 'https://vscode-infinite-canvas.com',
+                'X-Title': 'VS Code Infinite Canvas'
             },
             body: JSON.stringify({
                 model: model,
@@ -110,19 +112,19 @@ export async function generateAIIdeasGroq(selectedNodeText, connectedNodes = [],
 
         const data = await response.json();
         const responseText = data.choices[0].message.content;
-        console.log('✅ Groq response:', responseText);
+        console.log('✅ OpenRouter response:', responseText);
 
         // Return the AI response as a single idea (one node)
         const trimmedResponse = responseText.trim();
 
         if (!trimmedResponse) {
-            throw new Error('Groq generated empty response');
+            throw new Error('OpenRouter generated empty response');
         }
 
         return [trimmedResponse]; // Always return as array with single item
 
     } catch (apiError) {
-        console.error('❌ Groq API Error:', apiError.message);
+        console.error('❌ OpenRouter API Error:', apiError.message);
 
         // Fallback to mock response if API fails
         console.log('🔄 Falling back to mock response...');
@@ -130,7 +132,7 @@ export async function generateAIIdeasGroq(selectedNodeText, connectedNodes = [],
     }
 }
 
-// Fallback function for when Groq API is not available
+// Fallback function for when OpenRouter API is not available
 function generateMockResponse(selectedNodeText, model) {
     const modelName = model.toLowerCase();
     const input = selectedNodeText.toLowerCase();
@@ -138,21 +140,21 @@ function generateMockResponse(selectedNodeText, model) {
     // Generate contextual mock responses
     let responses = [];
 
-    if (modelName.includes('llama')) {
+    if (modelName.includes('claude')) {
         responses = [
-            `Building on "${selectedNodeText.substring(0, 30)}...", here's an expanded perspective from Llama 3.3.`,
-            `Your idea about "${selectedNodeText.substring(0, 25)}..." could be developed further with advanced reasoning.`,
-            `Considering "${selectedNodeText.substring(0, 20)}...", what about exploring related concepts with deeper analysis?`
+            `Building on "${selectedNodeText.substring(0, 30)}...", here's an expanded perspective from Claude.`,
+            `Your idea about "${selectedNodeText.substring(0, 25)}..." could be developed further with thoughtful analysis.`,
+            `Considering "${selectedNodeText.substring(0, 20)}...", what about exploring related concepts with careful reasoning?`
         ];
-    } else if (modelName.includes('qwen')) {
+    } else if (modelName.includes('gpt')) {
         responses = [
-            `From QWQ's analytical perspective: "${selectedNodeText.substring(0, 30)}..." presents interesting opportunities.`,
+            `From GPT's perspective: "${selectedNodeText.substring(0, 30)}..." presents interesting opportunities.`,
             `Analyzing "${selectedNodeText.substring(0, 25)}..." from different viewpoints reveals new insights.`,
             `Your concept "${selectedNodeText.substring(0, 20)}..." could benefit from systematic exploration.`
         ];
-    } else if (modelName.includes('gemma')) {
+    } else if (modelName.includes('llama')) {
         responses = [
-            `Thoughtfully considering "${selectedNodeText.substring(0, 30)}...", here are some insights.`,
+            `Thoughtfully considering "${selectedNodeText.substring(0, 30)}...", here are some insights from Llama.`,
             `Reflecting on "${selectedNodeText.substring(0, 25)}...", this could lead to interesting developments.`,
             `Your idea "${selectedNodeText.substring(0, 20)}..." has potential for creative expansion.`
         ];
@@ -178,8 +180,13 @@ function generateMockResponse(selectedNodeText, model) {
     return [responseText];
 }
 
-// Set Groq API key (called from VS Code extension)
-export function setGroqApiKey(apiKey) {
-    DEMO_GROQ_API_KEY = apiKey;
-    console.log('🔑 Groq API key updated');
+// Set OpenRouter API key (called from VS Code extension)
+export function setOpenRouterApiKey(apiKey) {
+    OPENROUTER_API_KEY = apiKey;
+    console.log('🔑 OpenRouter API key updated');
+}
+
+// Expose the function globally for UI access
+if (typeof window !== 'undefined') {
+    window.setOpenRouterApiKey = setOpenRouterApiKey;
 }
