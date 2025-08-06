@@ -38,3 +38,8 @@ bug is see:
     as a user i see the markdown text is being hiddedn, for exampel a big senteces only show the initial words, but then the rest gets hidden, so to fix this , just append the text to the next line, i mean make it simple 
 
     as a user when i navifate around the canvas nand then  i double click the nodes to edit i see another nodes to edit it, i mean i see double nodes, one where the text is and the other is the node where i can edit the text, fix this duplicate node, i just want the original and only edit there, 
+
+    when adding or editing text on the nodes, sometimes the
+    nodes gets removed when i fisnish 
+    editing them , read the code and create 
+    posibles causes first and tell me 

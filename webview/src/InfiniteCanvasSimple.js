@@ -1198,6 +1198,9 @@ class InputHandler {
         };
         
         textarea.addEventListener('keydown', (e) => {
+            // Always stop propagation to prevent canvas-level key handlers
+            e.stopPropagation();
+            
             if (e.key === 'Enter' && e.ctrlKey) {
                 // Ctrl+Enter to save
                 e.preventDefault();
@@ -1214,6 +1217,7 @@ class InputHandler {
                 textarea.value = textarea.value.substring(0, start) + '    ' + textarea.value.substring(end);
                 textarea.selectionStart = textarea.selectionEnd = start + 4;
             }
+            // Let all other keys (including Backspace/Delete) work normally in textarea
         });
         
         textarea.addEventListener('blur', finishEditing);
@@ -1812,6 +1816,11 @@ class CanvasRenderer {
     }
     
     drawNode(ctx, node, showConnectionPoints = false, inputHandler = null) {
+        // Skip rendering if node is being edited (text editor overlay is shown)
+        if (node.isEditing && node.type !== 'file') {
+            return;
+        }
+        
         // Ensure scrollY is defined
         if (node.scrollY === undefined) {
             node.scrollY = 0;
