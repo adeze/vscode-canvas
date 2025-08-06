@@ -43,3 +43,6 @@ bug is see:
     nodes gets removed when i fisnish 
     editing them , read the code and create 
     posibles causes first and tell me 
+
+
+    lets make the nodes respect the format of thetext, i mean sometimes i use a enter button and i still see the words next to another instead of one below the other, tell me if you undertood the bug

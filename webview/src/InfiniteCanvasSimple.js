@@ -1852,23 +1852,33 @@ class CanvasRenderer {
         ctx.textAlign = 'left';
         ctx.textBaseline = 'top';
         
-        // Wrap text into lines
-        const words = node.text.split(' ');
+        // Handle text formatting with newlines and word wrapping
+        const textLines = node.text.split('\n'); // Split on newlines first
         const lines = [];
-        let currentLine = words[0] || '';
         
-        for (let i = 1; i < words.length; i++) {
-            const word = words[i];
-            const testLine = currentLine + ' ' + word;
-            const width = ctx.measureText(testLine).width;
-            if (width < node.width - 20) {
-                currentLine = testLine;
-            } else {
-                lines.push(currentLine);
-                currentLine = word;
+        textLines.forEach(textLine => {
+            if (textLine.trim() === '') {
+                // Handle empty lines (just newlines)
+                lines.push('');
+                return;
             }
-        }
-        lines.push(currentLine);
+            
+            const words = textLine.split(' ');
+            let currentLine = words[0] || '';
+            
+            for (let i = 1; i < words.length; i++) {
+                const word = words[i];
+                const testLine = currentLine + ' ' + word;
+                const width = ctx.measureText(testLine).width;
+                if (width < node.width - 20) {
+                    currentLine = testLine;
+                } else {
+                    lines.push(currentLine);
+                    currentLine = word;
+                }
+            }
+            lines.push(currentLine);
+        });
         
         // Calculate total content height
         const lineHeight = 18;
