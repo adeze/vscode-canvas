@@ -1852,19 +1852,31 @@ class CanvasRenderer {
         ctx.textAlign = 'left';
         ctx.textBaseline = 'top';
         
-        // Handle text formatting with newlines and word wrapping
-        const textLines = node.text.split('\n'); // Split on newlines first
-        const lines = [];
+        // Parse markdown and handle text formatting
+        const textLines = node.text.split('\n');
+        const formattedLines = [];
         
         textLines.forEach(textLine => {
             if (textLine.trim() === '') {
-                // Handle empty lines (just newlines)
-                lines.push('');
+                formattedLines.push({ text: '', style: 'normal' });
                 return;
             }
             
-            const words = textLine.split(' ');
+            // Parse markdown formatting
+            const lineStyle = this.parseMarkdownLine(textLine);
+            
+            // Word wrap the text content
+            const words = lineStyle.text.split(' ');
+            if (words.length === 0 || (words.length === 1 && words[0] === '')) {
+                formattedLines.push({ text: '', style: lineStyle.style });
+                return;
+            }
+            
             let currentLine = words[0] || '';
+            
+            // Set font for measuring based on style
+            const originalFont = ctx.font;
+            ctx.font = this.getFontForStyle(lineStyle.style);
             
             for (let i = 1; i < words.length; i++) {
                 const word = words[i];
@@ -1873,38 +1885,55 @@ class CanvasRenderer {
                 if (width < node.width - 20) {
                     currentLine = testLine;
                 } else {
-                    lines.push(currentLine);
+                    formattedLines.push({ text: currentLine, style: lineStyle.style });
                     currentLine = word;
                 }
             }
-            lines.push(currentLine);
+            formattedLines.push({ text: currentLine, style: lineStyle.style });
+            
+            // Restore original font
+            ctx.font = originalFont;
         });
         
-        // Calculate total content height
-        const lineHeight = 18;
+        // Calculate total content height with different line heights for headings
         const padding = 10;
-        const totalContentHeight = lines.length * lineHeight + padding * 2;
+        let totalHeight = padding;
+        const lineHeights = [];
+        
+        formattedLines.forEach(line => {
+            const height = this.getLineHeightForStyle(line.style);
+            lineHeights.push(height);
+            totalHeight += height;
+        });
+        totalHeight += padding;
         
         // Store content dimensions for scrolling
-        node._contentHeight = totalContentHeight;
-        node._maxScroll = Math.max(0, totalContentHeight - node.height);
+        node._contentHeight = totalHeight;
+        node._maxScroll = Math.max(0, totalHeight - node.height);
         
         // Clamp scroll position
         node.scrollY = Math.max(0, Math.min(node.scrollY, node._maxScroll));
         
-        // Draw lines with scroll offset
-        const startY = node.y + padding - node.scrollY;
+        // Draw lines with scroll offset and markdown formatting
+        let currentY = node.y + padding - node.scrollY;
         
-        lines.forEach((line, index) => {
-            const lineY = startY + index * lineHeight;
+        formattedLines.forEach((line, index) => {
+            const lineHeight = lineHeights[index];
+            
             // Only draw lines that are visible in the viewport
-            if (lineY + lineHeight >= node.y && lineY <= node.y + node.height) {
+            if (currentY + lineHeight >= node.y && currentY <= node.y + node.height) {
+                // Set font and color for this line style
+                ctx.font = this.getFontForStyle(line.style);
+                ctx.fillStyle = this.getColorForStyle(line.style, node.textColor);
+                
                 ctx.fillText(
-                    line,
+                    line.text,
                     node.x + 10,
-                    lineY
+                    currentY
                 );
             }
+            
+            currentY += lineHeight;
         });
         
         ctx.restore();
@@ -1922,6 +1951,95 @@ class CanvasRenderer {
         // Draw resize handles if node is selected
         if (node.isSelected) {
             this.drawResizeHandles(ctx, node);
+        }
+    }
+    
+    // Markdown parsing helper functions
+    parseMarkdownLine(line) {
+        const trimmed = line.trim();
+        
+        // Headings
+        if (trimmed.startsWith('######')) {
+            return { text: trimmed.substring(6).trim(), style: 'h6' };
+        } else if (trimmed.startsWith('#####')) {
+            return { text: trimmed.substring(5).trim(), style: 'h5' };
+        } else if (trimmed.startsWith('####')) {
+            return { text: trimmed.substring(4).trim(), style: 'h4' };
+        } else if (trimmed.startsWith('###')) {
+            return { text: trimmed.substring(3).trim(), style: 'h3' };
+        } else if (trimmed.startsWith('##')) {
+            return { text: trimmed.substring(2).trim(), style: 'h2' };
+        } else if (trimmed.startsWith('#')) {
+            return { text: trimmed.substring(1).trim(), style: 'h1' };
+        }
+        
+        // Bold text (simplified - just check if whole line is bold)
+        if (trimmed.startsWith('**') && trimmed.endsWith('**') && trimmed.length > 4) {
+            return { text: trimmed.substring(2, trimmed.length - 2), style: 'bold' };
+        }
+        
+        // Italic text (simplified - just check if whole line is italic)
+        if (trimmed.startsWith('*') && trimmed.endsWith('*') && trimmed.length > 2) {
+            return { text: trimmed.substring(1, trimmed.length - 1), style: 'italic' };
+        }
+        
+        // List items
+        if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+            return { text: '• ' + trimmed.substring(2), style: 'list' };
+        }
+        
+        // Numbered lists
+        const numberedMatch = trimmed.match(/^\d+\.\s+(.+)$/);
+        if (numberedMatch) {
+            return { text: trimmed, style: 'list' };
+        }
+        
+        // Default normal text
+        return { text: line, style: 'normal' };
+    }
+    
+    getFontForStyle(style) {
+        switch (style) {
+            case 'h1': return 'bold 20px Segoe UI, sans-serif';
+            case 'h2': return 'bold 18px Segoe UI, sans-serif';
+            case 'h3': return 'bold 16px Segoe UI, sans-serif';
+            case 'h4': return 'bold 15px Segoe UI, sans-serif';
+            case 'h5': return 'bold 14px Segoe UI, sans-serif';
+            case 'h6': return 'bold 13px Segoe UI, sans-serif';
+            case 'bold': return 'bold 14px Segoe UI, sans-serif';
+            case 'italic': return 'italic 14px Segoe UI, sans-serif';
+            case 'list': return '14px Segoe UI, sans-serif';
+            default: return '14px Segoe UI, sans-serif';
+        }
+    }
+    
+    getLineHeightForStyle(style) {
+        switch (style) {
+            case 'h1': return 26;
+            case 'h2': return 24;
+            case 'h3': return 22;
+            case 'h4': return 20;
+            case 'h5': return 19;
+            case 'h6': return 18;
+            default: return 18;
+        }
+    }
+    
+    getColorForStyle(style, defaultColor) {
+        switch (style) {
+            case 'h1':
+            case 'h2':
+            case 'h3':
+            case 'h4':
+            case 'h5':
+            case 'h6':
+                return '#4a9eff'; // Blue color for headings
+            case 'bold':
+                return defaultColor;
+            case 'italic':
+                return '#888888'; // Slightly dimmed for italic
+            default:
+                return defaultColor;
         }
     }
     
