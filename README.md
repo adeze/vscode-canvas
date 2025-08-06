@@ -145,3 +145,8 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ---
 
 **Enjoy creating with Infinite Canvas!** 🎨✨
+
+
+npm install -g @vscode/vsce
+
+vsce package  

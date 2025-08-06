@@ -2277,11 +2277,15 @@ class CanvasRenderer {
             ctx.fillStyle = textColor;
             ctx.font = `${fontWeight} ${fontSize} Consolas, monospace`;
             
-            // Truncate long lines
-            const truncatedLine = this.truncateText(ctx, displayLine, maxWidth - 10);
+            // Wrap long lines instead of truncating
+            const wrappedLines = this.wrapTextToLines(ctx, displayLine, maxWidth - 10);
             
-            ctx.fillText(truncatedLine, x, currentY);
-            currentY += lineHeight;
+            for (let j = 0; j < wrappedLines.length; j++) {
+                if (currentY + lineHeight > y + maxHeight) break;
+                
+                ctx.fillText(wrappedLines[j], x, currentY);
+                currentY += lineHeight;
+            }
         });
         
         // Show "..." if content is truncated
@@ -2292,6 +2296,34 @@ class CanvasRenderer {
         }
         
         return currentY - y;
+    }
+    
+    // Helper function to wrap text into multiple lines
+    wrapTextToLines(ctx, text, maxWidth) {
+        if (!text || text.trim() === '') return [''];
+        
+        const words = text.split(' ');
+        const lines = [];
+        let currentLine = words[0] || '';
+        
+        for (let i = 1; i < words.length; i++) {
+            const word = words[i];
+            const testLine = currentLine + ' ' + word;
+            const width = ctx.measureText(testLine).width;
+            
+            if (width < maxWidth) {
+                currentLine = testLine;
+            } else {
+                lines.push(currentLine);
+                currentLine = word;
+            }
+        }
+        
+        if (currentLine) {
+            lines.push(currentLine);
+        }
+        
+        return lines.length > 0 ? lines : [''];
     }
     
     truncateText(ctx, text, maxWidth) {
