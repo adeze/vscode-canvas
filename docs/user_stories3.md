@@ -49,6 +49,9 @@ bug is see:
 
 
     copying and pastetinf the content of the 
-  node is working, i mean comand a and 
-  comand c and comand v are not working at 
-  text inside the nodes
+    node is working, i mean comand a and 
+    comand c and comand v are not working at 
+    text inside the nodes
+
+     lets prepare this codebase for release as opesource, lets start with
+   the icons of the marketplace , also tell me what do next

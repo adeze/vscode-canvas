@@ -3,7 +3,13 @@
 
 export class InfiniteCanvas {
     constructor(canvasId) {
-        console.log('🚀 Creating InfiniteCanvas with ID:', canvasId);
+        // Configuration
+        this.DEBUG_MODE = false; // Set to false for production
+        this.log = this.DEBUG_MODE ? console.log.bind(console) : () => {};
+        this.warn = console.warn.bind(console); // Always show warnings
+        this.error = console.error.bind(console); // Always show errors
+        
+        this.log('🚀 Creating InfiniteCanvas with ID:', canvasId);
         
         this.canvas = document.getElementById(canvasId);
         if (!this.canvas) {

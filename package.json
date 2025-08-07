@@ -1,7 +1,7 @@
 {
   "name": "infinite-canvas",
   "displayName": "Infinite Canvas",
-  "description": "Visual canvas editor for VS Code - create and edit .canvas files with infinite space, AI-powered content generation, and markdown support",
+  "description": "A powerful visual canvas editor for VS Code. Create infinite mind maps, diagrams, and visual workflows with AI-powered content generation and markdown support.",
   "version": "0.1.0",
   "engines": {
     "vscode": "^1.74.0"
@@ -10,6 +10,7 @@
     "Other",
     "Visualization"
   ],
+  "icon": "icon.png",
   "keywords": [
     "canvas",
     "visual",
@@ -76,6 +77,17 @@
     "type": "git",
     "url": "https://github.com/infinite-canvas/infinite-canvas-vscode"
   },
+  "homepage": "https://github.com/infinite-canvas/infinite-canvas-vscode#readme",
+  "bugs": {
+    "url": "https://github.com/infinite-canvas/infinite-canvas-vscode/issues"
+  },
   "publisher": "infinite-canvas-dev",
-  "license": "MIT"
+  "license": "MIT",
+  "author": {
+    "name": "Infinite Canvas Team"
+  },
+  "galleryBanner": {
+    "color": "#2D3748",
+    "theme": "dark"
+  }
 }

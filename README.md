@@ -1,10 +1,16 @@
-# Infinite Canvas
+# Infinite Canvas for VS Code
 
-Visual canvas editor for VS Code - create and edit `.canvas` files with infinite space, AI-powered content generation, and markdown support.
+> 🎨 **A powerful visual canvas editor for VS Code**  
+> Create infinite mind maps, diagrams, and visual workflows with AI-powered content generation and markdown support.
 
-![Infinite Canvas Extension](https://img.shields.io/badge/VS%20Code-Extension-blue)
-![Version](https://img.shields.io/badge/version-0.1.0-green)
-![License](https://img.shields.io/badge/license-MIT-blue)
+[![VS Code Extension](https://img.shields.io/badge/VS%20Code-Extension-blue?logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=infinite-canvas-dev.infinite-canvas)
+[![Version](https://img.shields.io/badge/version-0.1.0-green)](https://github.com/infinite-canvas/infinite-canvas-vscode/releases)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![GitHub Stars](https://img.shields.io/github/stars/infinite-canvas/infinite-canvas-vscode?style=social)](https://github.com/infinite-canvas/infinite-canvas-vscode)
+
+![Demo GIF placeholder - Add your demo GIF here]
+
+---
 
 ## Features
 
@@ -20,11 +26,11 @@ Visual canvas editor for VS Code - create and edit `.canvas` files with infinite
 - **Smart Context**: Uses connected nodes as conversation history for relevant suggestions
 - **Free to use**: Works with free Groq API or falls back to mock responses
 
-### 📝 Markdown Support
-- **Edit markdown files**: Double-click `.md` file nodes to edit content directly
-- **Rich preview**: Beautiful markdown rendering with syntax highlighting
-- **Real-time sync**: Changes save automatically to your workspace files
-- **Seamless workflow**: Edit markdown without leaving your canvas
+### 📝 Rich Text & Markdown Support
+- **Markdown rendering**: Full markdown support with headings, lists, bold, italic
+- **Live formatting**: See markdown rendered in real-time on your canvas
+- **File editing**: Double-click `.md` file nodes to edit content directly
+- **Auto-save**: Changes save automatically to your workspace files
 
 ### 🔗 Obsidian Compatibility
 - **Native format**: Uses the same `.canvas` format as Obsidian
@@ -142,11 +148,49 @@ Found a bug or have a feature request? Please visit our [GitHub repository](http
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
+## 🚀 Installation
+
+### From VS Code Marketplace (Recommended)
+1. Open VS Code
+2. Go to Extensions (`Ctrl+Shift+X`)
+3. Search for "Infinite Canvas"
+4. Click Install
+
+### Manual Installation
+1. Download the latest `.vsix` from [Releases](https://github.com/infinite-canvas/infinite-canvas-vscode/releases)
+2. Install via: `code --install-extension infinite-canvas-0.1.0.vsix`
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+### Development Setup
+```bash
+# Clone repository
+git clone https://github.com/infinite-canvas/infinite-canvas-vscode.git
+cd infinite-canvas-vscode
+
+# Install dependencies
+npm install
+
+# Build extension
+npm run compile
+
+# Package extension (optional)
+npm install -g @vscode/vsce
+vsce package
+```
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
 ---
 
 **Enjoy creating with Infinite Canvas!** 🎨✨
 
-
-npm install -g @vscode/vsce
-
-vsce package  
+*Made with ❤️ by the Infinite Canvas Team*  
