@@ -5,7 +5,7 @@
 
 [![VS Code Extension](https://img.shields.io/badge/VS%20Code-Extension-blue?logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=LuisFernando.infinite-canvas)
 [![Obsidian Compatible](https://img.shields.io/badge/Obsidian-Canvas%20Compatible-7c3aed?logo=obsidian)](https://obsidian.md/canvas)
-[![Version](https://img.shields.io/badge/version-0.1.0-green)](https://github.com/lout33/infinite_canvas_vscode/releases)
+[![Version](https://img.shields.io/badge/version-0.1.1-green)](https://github.com/lout33/infinite_canvas_vscode/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![GitHub Stars](https://img.shields.io/github/stars/lout33/infinite_canvas_vscode?style=social)](https://github.com/lout33/infinite_canvas_vscode)
 
@@ -132,6 +132,16 @@ This extension contributes the following settings:
 - Large canvases may impact performance on older machines
 
 ## Release Notes
+
+### 0.1.1
+
+Enhanced Obsidian compatibility and marketplace discoverability:
+
+- 🔗 Improved Obsidian Canvas compatibility documentation
+- 🎯 Enhanced marketplace keywords for better discoverability
+- 📸 Added demo image reference
+- 📝 Updated descriptions to highlight Obsidian integration
+- 🏷️ Added PKM (Personal Knowledge Management) workflow support
 
 ### 0.1.0
 
