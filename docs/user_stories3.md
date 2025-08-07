@@ -55,3 +55,8 @@ bug is see:
 
      lets prepare this codebase for release as opesource, lets start with
    the icons of the marketplace , also tell me what do next
+
+
+    add  gruop selection  to move and delete a group of nodes 
+
+    save also the name of the model in the node, added it the jsoncavas so its saved after closing 

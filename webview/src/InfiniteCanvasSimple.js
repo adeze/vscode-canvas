@@ -3230,7 +3230,6 @@ class UIManager {
             // Use the same default models as AIManager - single source of truth
             const defaultModels = [
                 'google/gemini-2.5-flash',
-                'qwen/qwen3-235b-a22b-thinking-2507',
                 'openai/gpt-4.1',
                 'anthropic/claude-sonnet-4'
             ];
