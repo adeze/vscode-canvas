@@ -1,23 +1,32 @@
 {
   "name": "infinite-canvas",
   "displayName": "Infinite Canvas",
-  "description": "A powerful visual canvas editor for VS Code. Create infinite mind maps, diagrams, and visual workflows with AI-powered content generation and markdown support.",
+  "description": "A powerful visual canvas editor for VS Code with full Obsidian Canvas compatibility. Create infinite mind maps, diagrams, and visual workflows with AI-powered content generation and markdown support.",
   "version": "0.1.0",
   "engines": {
     "vscode": "^1.74.0"
   },
   "categories": [
+    "Visualization",
     "Other",
-    "Visualization"
+    "Notebooks"
   ],
   "icon": "icon.png",
   "keywords": [
+    "obsidian",
+    "obsidian-canvas",
     "canvas",
     "visual",
     "mind map",
     "diagram",
+    "knowledge management",
+    "note taking",
+    "pkm",
     "ai",
-    "markdown"
+    "markdown",
+    "graph",
+    "visualization",
+    "workflow"
   ],
   "main": "./out/extension.js",
   "activationEvents": [

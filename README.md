@@ -1,18 +1,26 @@
 # Infinite Canvas for VS Code
 
-> 🎨 **A powerful visual canvas editor for VS Code**  
-> Create infinite mind maps, diagrams, and visual workflows with AI-powered content generation and markdown support.
+> 🎨 **A powerful visual canvas editor for VS Code with full Obsidian Canvas compatibility**  
+> Create infinite mind maps, diagrams, and visual workflows with AI-powered content generation and markdown support. Works seamlessly with Obsidian Canvas files.
 
 [![VS Code Extension](https://img.shields.io/badge/VS%20Code-Extension-blue?logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=LuisFernando.infinite-canvas)
+[![Obsidian Compatible](https://img.shields.io/badge/Obsidian-Canvas%20Compatible-7c3aed?logo=obsidian)](https://obsidian.md/canvas)
 [![Version](https://img.shields.io/badge/version-0.1.0-green)](https://github.com/lout33/infinite_canvas_vscode/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![GitHub Stars](https://img.shields.io/github/stars/lout33/infinite_canvas_vscode?style=social)](https://github.com/lout33/infinite_canvas_vscode)
 
-![Demo GIF placeholder - Add your demo GIF here]
+![Infinite Canvas Demo](image_reference.png)
 
 ---
 
 ## Features
+
+### 🔗 Obsidian Canvas Compatibility
+- **Native format**: Uses the same `.canvas` format as [Obsidian Canvas](https://obsidian.md/canvas)
+- **Bidirectional**: Files work seamlessly between VS Code and Obsidian
+- **Import/Export**: Open existing Obsidian canvas files directly in VS Code
+- **Perfect sync**: Create in VS Code, edit in Obsidian, or vice versa
+- **Knowledge management**: Perfect for PKM (Personal Knowledge Management) workflows
 
 ### 🎨 Visual Canvas Editor
 - **Infinite workspace**: Create and organize content on an unlimited canvas
@@ -31,12 +39,6 @@
 - **Live formatting**: See markdown rendered in real-time on your canvas
 - **File editing**: Double-click `.md` file nodes to edit content directly
 - **Auto-save**: Changes save automatically to your workspace files
-
-### 🔗 Obsidian Canvas Compatibility
-- **Native format**: Uses the same `.canvas` format as [Obsidian Canvas](https://obsidian.md/canvas)
-- **Bidirectional**: Files work seamlessly between VS Code and Obsidian
-- **Import/Export**: Open existing Obsidian canvas files directly in VS Code
-- **Perfect sync**: Create in VS Code, edit in Obsidian, or vice versa
 
 ## Quick Start
 
