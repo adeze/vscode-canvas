@@ -3,7 +3,7 @@
 > 🎨 **A powerful visual canvas editor for VS Code**  
 > Create infinite mind maps, diagrams, and visual workflows with AI-powered content generation and markdown support.
 
-[![VS Code Extension](https://img.shields.io/badge/VS%20Code-Extension-blue?logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=infinite-canvas-dev.infinite-canvas)
+[![VS Code Extension](https://img.shields.io/badge/VS%20Code-Extension-blue?logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=LuisFernando.infinite-canvas)
 [![Version](https://img.shields.io/badge/version-0.1.0-green)](https://github.com/lout33/infinite_canvas_vscode/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![GitHub Stars](https://img.shields.io/github/stars/lout33/infinite_canvas_vscode?style=social)](https://github.com/lout33/infinite_canvas_vscode)

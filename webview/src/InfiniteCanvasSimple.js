@@ -441,6 +441,11 @@ class CanvasState {
                     baseNode.text = node.text;
                 }
                 
+                // Include AI model information if available
+                if (node.aiModel) {
+                    baseNode.aiModel = node.aiModel;
+                }
+                
                 return baseNode;
             }),
             edges: this.connections.map(conn => ({
@@ -504,6 +509,11 @@ class CanvasState {
                         setTimeout(() => this.loadFileContent(node), 100);
                     } else {
                         node.text = nodeData.text || 'New Node';
+                    }
+                    
+                    // Load AI model information if available
+                    if (nodeData.aiModel) {
+                        node.aiModel = nodeData.aiModel;
                     }
                     
                     this.nodes.push(node);
