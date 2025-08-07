@@ -46,3 +46,9 @@ bug is see:
 
 
     lets make the nodes respect the format of thetext, i mean sometimes i use a enter button and i still see the words next to another instead of one below the other, tell me if you undertood the bug
+
+
+    copying and pastetinf the content of the 
+  node is working, i mean comand a and 
+  comand c and comand v are not working at 
+  text inside the nodes

@@ -1198,26 +1198,41 @@ class InputHandler {
         };
         
         textarea.addEventListener('keydown', (e) => {
-            // Always stop propagation to prevent canvas-level key handlers
-            e.stopPropagation();
-            
+            // Handle specific editor commands first
             if (e.key === 'Enter' && e.ctrlKey) {
                 // Ctrl+Enter to save
                 e.preventDefault();
+                e.stopPropagation();
                 finishEditing();
+                return;
             } else if (e.key === 'Escape') {
                 // Escape to cancel
                 e.preventDefault();
+                e.stopPropagation();
                 cancelEditing();
+                return;
             } else if (e.key === 'Tab') {
                 // Handle tab indentation
                 e.preventDefault();
+                e.stopPropagation();
                 const start = textarea.selectionStart;
                 const end = textarea.selectionEnd;
                 textarea.value = textarea.value.substring(0, start) + '    ' + textarea.value.substring(end);
                 textarea.selectionStart = textarea.selectionEnd = start + 4;
+                return;
             }
-            // Let all other keys (including Backspace/Delete) work normally in textarea
+            
+            // Allow clipboard operations (Cmd+A, Cmd+C, Cmd+V, Cmd+X, Cmd+Z, etc.)
+            if (e.metaKey || e.ctrlKey) {
+                // Don't stop propagation for clipboard and undo operations
+                const allowedKeys = ['a', 'c', 'v', 'x', 'z', 'y'];
+                if (allowedKeys.includes(e.key.toLowerCase())) {
+                    return; // Let browser handle clipboard operations
+                }
+            }
+            
+            // Stop propagation for all other keys to prevent canvas-level handlers
+            e.stopPropagation();
         });
         
         textarea.addEventListener('blur', finishEditing);
