@@ -16,9 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - File integration via drag & drop from VS Code explorer
 
 - 🤖 **AI-Powered Content Generation**
-  - Integration with multiple AI models (Llama 3.3, QWQ, Gemma2)
+  - Integration with multiple AI models via OpenRouter (Google Gemini, OpenAI GPT-4, Anthropic Claude, and more)
   - Smart context-aware idea generation
-  - Free Groq API integration with mock fallback
+  - OpenRouter API integration with mock fallback
   - Connected node expansion based on conversation history
 
 - 📝 **Rich Text & Markdown Support**
@@ -28,10 +28,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Live markdown preview in canvas nodes
   - Direct markdown file editing via double-click
 
-- 🔗 **Obsidian Compatibility**
-  - Native .canvas file format support
+- 🔗 **Obsidian Canvas Compatibility**
+  - Native .canvas file format support (compatible with [Obsidian Canvas](https://obsidian.md/canvas))
   - Bidirectional compatibility with Obsidian
   - Import/export existing Obsidian canvas files
+  - Perfect sync between VS Code and Obsidian
 
 - ⚡ **Enhanced User Experience**
   - Keyboard shortcuts (Delete, Ctrl+Enter, Esc)

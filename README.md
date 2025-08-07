@@ -4,9 +4,9 @@
 > Create infinite mind maps, diagrams, and visual workflows with AI-powered content generation and markdown support.
 
 [![VS Code Extension](https://img.shields.io/badge/VS%20Code-Extension-blue?logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=infinite-canvas-dev.infinite-canvas)
-[![Version](https://img.shields.io/badge/version-0.1.0-green)](https://github.com/infinite-canvas/infinite-canvas-vscode/releases)
+[![Version](https://img.shields.io/badge/version-0.1.0-green)](https://github.com/lout33/infinite_canvas_vscode/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
-[![GitHub Stars](https://img.shields.io/github/stars/infinite-canvas/infinite-canvas-vscode?style=social)](https://github.com/infinite-canvas/infinite-canvas-vscode)
+[![GitHub Stars](https://img.shields.io/github/stars/lout33/infinite_canvas_vscode?style=social)](https://github.com/lout33/infinite_canvas_vscode)
 
 ![Demo GIF placeholder - Add your demo GIF here]
 
@@ -22,9 +22,9 @@
 
 ### 🤖 AI-Powered Content Generation
 - **Generate Ideas**: Click the "✨ Generate Ideas" button to generate connected content
-- **Multiple AI Models**: Choose from Llama 3.3, QWQ, and Gemma2 models
+- **Multiple AI Models**: Choose from Google Gemini, OpenAI GPT-4, Anthropic Claude, and more via OpenRouter
 - **Smart Context**: Uses connected nodes as conversation history for relevant suggestions
-- **Free to use**: Works with free Groq API or falls back to mock responses
+- **Free to use**: Works with OpenRouter API or falls back to mock responses
 
 ### 📝 Rich Text & Markdown Support
 - **Markdown rendering**: Full markdown support with headings, lists, bold, italic
@@ -32,10 +32,11 @@
 - **File editing**: Double-click `.md` file nodes to edit content directly
 - **Auto-save**: Changes save automatically to your workspace files
 
-### 🔗 Obsidian Compatibility
-- **Native format**: Uses the same `.canvas` format as Obsidian
+### 🔗 Obsidian Canvas Compatibility
+- **Native format**: Uses the same `.canvas` format as [Obsidian Canvas](https://obsidian.md/canvas)
 - **Bidirectional**: Files work seamlessly between VS Code and Obsidian
-- **Import/Export**: Open existing Obsidian canvas files directly
+- **Import/Export**: Open existing Obsidian canvas files directly in VS Code
+- **Perfect sync**: Create in VS Code, edit in Obsidian, or vice versa
 
 ## Quick Start
 
@@ -66,9 +67,9 @@
 4. **Watch** as connected ideas appear automatically
 
 ### Settings
-- **Groq API Key**: Add your free API key in VS Code settings for AI features
+- **OpenRouter API Key**: Add your API key in VS Code settings for AI features
   - Go to Settings → Extensions → Infinite Canvas
-  - Add your API key from [console.groq.com](https://console.groq.com)
+  - Add your API key from [openrouter.ai](https://openrouter.ai)
   - Leave empty to use mock responses
 
 ## File Format
@@ -115,13 +116,13 @@ Infinite Canvas uses the standard Obsidian canvas format:
 ## Requirements
 
 - VS Code 1.74.0 or higher
-- Optional: Free Groq API key for AI features ([Get one here](https://console.groq.com))
+- Optional: OpenRouter API key for AI features ([Get one here](https://openrouter.ai))
 
 ## Extension Settings
 
 This extension contributes the following settings:
 
-* `infinite-canvas.groqApiKey`: Your Groq API key for AI-powered idea generation (optional)
+* `infinite-canvas.groqApiKey`: Your OpenRouter API key for AI-powered idea generation (optional)
 
 ## Known Issues
 
@@ -135,14 +136,14 @@ This extension contributes the following settings:
 Initial release of Infinite Canvas extension:
 
 - ✨ Visual canvas editor for `.canvas` files
-- 🤖 AI-powered content generation
-- 📝 Markdown file editing support
-- 🔗 Full Obsidian canvas compatibility
+- 🤖 AI-powered content generation via OpenRouter
+- 📝 Rich markdown rendering and file editing support
+- 🔗 Full Obsidian Canvas compatibility ([obsidian.md/canvas](https://obsidian.md/canvas))
 - ⚡ Smooth navigation and interactions
 
 ## Contributing
 
-Found a bug or have a feature request? Please visit our [GitHub repository](https://github.com/infinite-canvas/infinite-canvas-vscode).
+Found a bug or have a feature request? Please visit our [GitHub repository](https://github.com/lout33/infinite_canvas_vscode).
 
 ## License
 
@@ -157,7 +158,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 4. Click Install
 
 ### Manual Installation
-1. Download the latest `.vsix` from [Releases](https://github.com/infinite-canvas/infinite-canvas-vscode/releases)
+1. Download the latest `.vsix` from [Releases](https://github.com/lout33/infinite_canvas_vscode/releases)
 2. Install via: `code --install-extension infinite-canvas-0.1.0.vsix`
 
 ---
@@ -169,8 +170,8 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guid
 ### Development Setup
 ```bash
 # Clone repository
-git clone https://github.com/infinite-canvas/infinite-canvas-vscode.git
-cd infinite-canvas-vscode
+git clone https://github.com/lout33/infinite_canvas_vscode.git
+cd infinite_canvas_vscode
 
 # Install dependencies
 npm install

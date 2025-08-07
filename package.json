@@ -57,8 +57,8 @@
         "infinite-canvas.groqApiKey": {
           "type": "string",
           "default": "",
-          "description": "Groq API key for AI-powered idea generation (optional - fallback to mock responses if not provided)",
-          "markdownDescription": "Groq API key for AI-powered idea generation. Get your free API key at [console.groq.com](https://console.groq.com). If not provided, the extension will use mock responses."
+          "description": "OpenRouter API key for AI-powered idea generation (optional - fallback to mock responses if not provided)",
+          "markdownDescription": "OpenRouter API key for AI-powered idea generation. Get your free API key at [openrouter.ai](https://openrouter.ai). If not provided, the extension will use mock responses."
         }
       }
     }
@@ -75,11 +75,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/infinite-canvas/infinite-canvas-vscode"
+    "url": "https://github.com/lout33/infinite_canvas_vscode"
   },
-  "homepage": "https://github.com/infinite-canvas/infinite-canvas-vscode#readme",
+  "homepage": "https://github.com/lout33/infinite_canvas_vscode#readme",
   "bugs": {
-    "url": "https://github.com/infinite-canvas/infinite-canvas-vscode/issues"
+    "url": "https://github.com/lout33/infinite_canvas_vscode/issues"
   },
   "publisher": "infinite-canvas-dev",
   "license": "MIT",

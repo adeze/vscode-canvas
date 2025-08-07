@@ -13,8 +13,8 @@
 
 1. **Fork and Clone**
    ```bash
-   git clone https://github.com/your-username/infinite-canvas-vscode.git
-   cd infinite-canvas-vscode
+   git clone https://github.com/your-username/infinite_canvas_vscode.git
+   cd infinite_canvas_vscode
    ```
 
 2. **Install Dependencies**
@@ -165,8 +165,8 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
 
 ## ❓ Need Help?
 
-- 💬 [Discussions](https://github.com/infinite-canvas/infinite-canvas-vscode/discussions) - General questions and ideas
-- 🐛 [Issues](https://github.com/infinite-canvas/infinite-canvas-vscode/issues) - Bug reports and feature requests
+- 💬 [Discussions](https://github.com/lout33/infinite_canvas_vscode/discussions) - General questions and ideas
+- 🐛 [Issues](https://github.com/lout33/infinite_canvas_vscode/issues) - Bug reports and feature requests
 - 📧 Email: [contribute@infinite-canvas.dev](mailto:contribute@infinite-canvas.dev)
 
 ## 📜 Code of Conduct
