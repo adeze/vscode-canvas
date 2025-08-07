@@ -2688,23 +2688,27 @@ class UIManager {
         // Create floating generate button (initially hidden)
         const generateBtn = document.createElement('button');
         generateBtn.id = 'floating-generate-btn';
-        generateBtn.innerHTML = '✨ Generate';
+        generateBtn.innerHTML = '✨';
+        generateBtn.title = 'Generate AI ideas';
         generateBtn.style.cssText = `
             position: absolute;
-            padding: 8px 16px;
+            padding: 4px 8px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            border-radius: 20px;
+            border-radius: 12px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 14px;
             font-weight: 500;
             z-index: 1000;
             display: none;
             transform: translateX(-50%);
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-width: 24px;
+            height: 24px;
+            line-height: 1;
         `;
         
         generateBtn.addEventListener('mouseenter', () => {
@@ -3227,8 +3231,8 @@ class UIManager {
             const defaultModels = [
                 'google/gemini-2.5-flash',
                 'qwen/qwen3-235b-a22b-thinking-2507',
-                'openai/gpt-4o',
-                'anthropic/claude-3.5-sonnet'
+                'openai/gpt-4.1',
+                'anthropic/claude-sonnet-4'
             ];
             localStorage.setItem('aiModels', JSON.stringify(defaultModels));
         }
@@ -3294,7 +3298,7 @@ class UIManager {
             
             const label = document.createElement('label');
             label.htmlFor = `model-${model}`;
-            label.textContent = model.split('/')[1] || model; // Show model name after slash
+            label.textContent = model; // Show complete model name with provider prefix
             label.style.cssText = `
                 color: #d0d0d0;
                 font-size: 10px;
@@ -3347,14 +3351,14 @@ class UIManager {
             const node = selectedNodes[0];
             const canvasRect = this.canvas.canvas.getBoundingClientRect();
             
-            // Calculate position in screen coordinates - fix coordinate calculation
-            const screenX = canvasRect.left + (node.x + node.width / 2) * this.canvas.canvasState.scale + this.canvas.canvasState.offsetX;
-            const screenY = canvasRect.top + (node.y - 40) * this.canvas.canvasState.scale + this.canvas.canvasState.offsetY;
+            // Calculate position in screen coordinates - position above the node, no collision
+            const screenX = canvasRect.left + (node.x + node.width - 12) * this.canvas.canvasState.scale + this.canvas.canvasState.offsetX;
+            const screenY = canvasRect.top + (node.y - 35) * this.canvas.canvasState.scale + this.canvas.canvasState.offsetY;
             
             // Ensure button stays within viewport bounds
-            const buttonWidth = 120; // approximate button width
+            const buttonWidth = 24; // small button width
             const clampedX = Math.max(buttonWidth / 2, Math.min(window.innerWidth - buttonWidth / 2, screenX));
-            const clampedY = Math.max(50, screenY); // Keep 50px from top
+            const clampedY = Math.max(30, screenY); // Keep 30px from top
             
             this.floatingGenerateBtn.style.left = `${clampedX}px`;
             this.floatingGenerateBtn.style.top = `${clampedY}px`;
@@ -3362,11 +3366,11 @@ class UIManager {
             
             // Add generating state visual feedback
             if (node.isGeneratingAI) {
-                this.floatingGenerateBtn.innerHTML = '⏳ Generating...';
+                this.floatingGenerateBtn.innerHTML = '⏳';
                 this.floatingGenerateBtn.style.opacity = '0.7';
                 this.floatingGenerateBtn.style.cursor = 'not-allowed';
             } else {
-                this.floatingGenerateBtn.innerHTML = '✨ Generate';
+                this.floatingGenerateBtn.innerHTML = '✨';
                 this.floatingGenerateBtn.style.opacity = '1';
                 this.floatingGenerateBtn.style.cursor = 'pointer';
             }
