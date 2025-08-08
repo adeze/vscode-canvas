@@ -153,52 +153,18 @@ class CanvasEditorProvider implements vscode.CustomTextEditorProvider {
             console.log('Loading file content for:', filePath);
             
             let fileUri: vscode.Uri;
+            const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
             
-            // If filePath is absolute, use it directly
-            if (path.isAbsolute(filePath)) {
-                console.log('Using absolute path:', filePath);
-                fileUri = vscode.Uri.file(filePath);
-            } else {
-                // For relative paths, try multiple base directories
-                const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-                if (!workspaceFolder) {
-                    throw new Error('No workspace folder found');
-                }
-                
-                console.log('Using relative path:', filePath, 'resolved to:', workspaceFolder.uri.fsPath);
-                
-                // First try relative to workspace
-                fileUri = vscode.Uri.joinPath(workspaceFolder.uri, filePath);
-                
-                // If file doesn't exist in workspace, try common relative directories
-                try {
-                    await vscode.workspace.fs.stat(fileUri);
-                } catch {
-                    // Try relative to common base directories
-                    const commonBases = [
-                        '/Users/lout/Documents/LIFE/input_output/research_input_output',
-                        path.dirname(workspaceFolder.uri.fsPath)
-                    ];
-                    
-                    let found = false;
-                    for (const basePath of commonBases) {
-                        const alternativeUri = vscode.Uri.file(path.join(basePath, filePath));
-                        try {
-                            await vscode.workspace.fs.stat(alternativeUri);
-                            fileUri = alternativeUri;
-                            found = true;
-                            console.log('Found file at alternative path:', alternativeUri.fsPath);
-                            break;
-                        } catch {
-                            // Continue trying other paths
-                        }
-                    }
-                    
-                    if (!found) {
-                        throw new Error(`File not found in any of the expected locations: ${filePath}`);
-                    }
-                }
+            if (!workspaceFolder) {
+                throw new Error('No workspace folder found');
             }
+
+            // Convert old absolute-like paths to relative paths
+            let normalizedPath = this.normalizeToRelativePath(filePath, workspaceFolder.uri.fsPath);
+            console.log('Normalized path:', normalizedPath);
+            
+            // Always treat the path as relative to workspace
+            fileUri = vscode.Uri.joinPath(workspaceFolder.uri, normalizedPath);
             
             // Check if file exists and read content
             const fileStats = await vscode.workspace.fs.stat(fileUri);
@@ -224,18 +190,53 @@ class CanvasEditorProvider implements vscode.CustomTextEditorProvider {
             });
         }
     }
+
+    private normalizeToRelativePath(filePath: string, workspacePath: string): string {
+        // If it's already a simple relative path, return as-is
+        if (!filePath.includes('/') || (!filePath.startsWith('/') && !filePath.startsWith('Users'))) {
+            return filePath;
+        }
+        
+        // Handle paths that start with 'Users' (absolute paths with leading slash removed)
+        if (filePath.startsWith('Users')) {
+            const fullPath = '/' + filePath;
+            
+            // If the path starts with our workspace path, make it relative
+            if (fullPath.startsWith(workspacePath)) {
+                const relativePath = fullPath.substring(workspacePath.length + 1);
+                console.log('Converted stored absolute path to relative:', filePath, '->', relativePath);
+                return relativePath;
+            }
+        }
+        
+        // If it's an absolute path
+        if (filePath.startsWith('/')) {
+            // If the path starts with our workspace path, make it relative
+            if (filePath.startsWith(workspacePath)) {
+                const relativePath = filePath.substring(workspacePath.length + 1);
+                console.log('Converted absolute path to relative:', filePath, '->', relativePath);
+                return relativePath;
+            }
+        }
+        
+        // Fallback: return as-is
+        return filePath;
+    }
     
     private async saveFileContent(filePath: string, content: string, webviewPanel: vscode.WebviewPanel, nodeId: string): Promise<void> {
         try {
             console.log('Saving file content for:', filePath);
             
-            // Resolve the file path relative to workspace
             const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
             if (!workspaceFolder) {
                 throw new Error('No workspace folder found');
             }
             
-            const fileUri = vscode.Uri.joinPath(workspaceFolder.uri, filePath);
+            // Normalize the path to be relative
+            const normalizedPath = this.normalizeToRelativePath(filePath, workspaceFolder.uri.fsPath);
+            console.log('Normalized save path:', normalizedPath);
+            
+            const fileUri = vscode.Uri.joinPath(workspaceFolder.uri, normalizedPath);
             
             // Write content to file
             const fileContent = Buffer.from(content, 'utf8');
@@ -267,13 +268,16 @@ class CanvasEditorProvider implements vscode.CustomTextEditorProvider {
         try {
             console.log('Creating new file:', filePath);
             
-            // Resolve the file path relative to workspace
             const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
             if (!workspaceFolder) {
                 throw new Error('No workspace folder found');
             }
             
-            const fileUri = vscode.Uri.joinPath(workspaceFolder.uri, filePath);
+            // Normalize the path to be relative
+            const normalizedPath = this.normalizeToRelativePath(filePath, workspaceFolder.uri.fsPath);
+            console.log('Normalized create path:', normalizedPath);
+            
+            const fileUri = vscode.Uri.joinPath(workspaceFolder.uri, normalizedPath);
             
             // Create directories if they don't exist
             const dirUri = vscode.Uri.joinPath(fileUri, '..');
@@ -288,7 +292,7 @@ class CanvasEditorProvider implements vscode.CustomTextEditorProvider {
             const fileContent = Buffer.from(content, 'utf8');
             await vscode.workspace.fs.writeFile(fileUri, fileContent);
             
-            console.log('✅ File created successfully:', filePath);
+            console.log('✅ File created successfully:', normalizedPath);
             
         } catch (error) {
             console.error('Error creating file:', error);

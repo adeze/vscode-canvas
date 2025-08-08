@@ -66,3 +66,7 @@ bug is see:
     > good now lets improve the nodes button , lets add the new button that will open a   │
 │   models of the content of the node, happens that sometimes the ocntent is a lot of   │
 │   text and i want to read it like a normal text file, so add this button ,  
+
+
+now lets posible for only using relatives files path on     │
+│   the .canvas files, cause creating absolutes path is complating more the file , so to make this change simple, lets jsut no make it backwards comptible,s just make the code work with relative path and thats it,  remember this a mvp so we do not need compatibility

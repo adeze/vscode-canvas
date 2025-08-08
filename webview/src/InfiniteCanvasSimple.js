@@ -1595,40 +1595,64 @@ class InputHandler {
     createFileNodeFromPath(filePath, x, y) {
         console.log('📄 Creating file node from path:', filePath);
         
-        // Store both the relative path and display name
-        let displayName = filePath;
-        let relativeFilePath = filePath;
+        // Convert all paths to relative paths from workspace root
+        let relativeFilePath = this.convertToRelativePath(filePath);
         
-        if (filePath.startsWith('/')) {
-            // For absolute paths, convert to relative path from common base directories
-            const pathParts = filePath.split('/');
-            displayName = pathParts[pathParts.length - 1];
-            
-            // Try to find a relative path from common base directories
-            const commonBases = [
-                '/Users/lout/Documents/LIFE/input_output/research_input_output',
-                '/Users/lout/Documents/LIFE/input_output/output/applications/03_level_active_development/infinite_canvas1/infinite_canvas_v5_vscode'
-            ];
-            
-            for (const basePath of commonBases) {
-                if (filePath.startsWith(basePath)) {
-                    relativeFilePath = filePath.substring(basePath.length + 1); // +1 to remove leading slash
-                    console.log('📍 Converted absolute path to relative:', relativeFilePath);
-                    break;
-                }
-            }
-            
-            // If no common base found, store the absolute path
-            if (relativeFilePath === filePath) {
-                relativeFilePath = filePath;
-                console.log('📍 Using absolute path as fallback:', relativeFilePath);
+        const fileNode = this.canvasState.createFileNode(relativeFilePath, x, y);
+        console.log('✅ File node created:', fileNode.id, 'with relative path:', relativeFilePath);
+    }
+
+    convertToRelativePath(filePath) {
+        // If already relative, return as-is
+        if (!filePath.startsWith('/')) {
+            return filePath;
+        }
+        
+        // For absolute paths, try to make them relative to workspace
+        const pathParts = filePath.split('/');
+        
+        // Look for common workspace patterns that indicate the current workspace
+        // Since we know the pattern is usually like: /Users/lout/Documents/LIFE/life3_cline/
+        // We want to find the immediate parent of our target files
+        
+        // Look for workspace identifiers in order
+        const workspacePatterns = [
+            'life3_cline',  // Most specific - this is likely our workspace root
+            'infinite_canvas_v5_vscode',  // Extension workspace
+            'LIFE'  // General parent
+        ];
+        
+        let workspaceIndex = -1;
+        for (const pattern of workspacePatterns) {
+            const index = pathParts.indexOf(pattern);
+            if (index !== -1) {
+                workspaceIndex = index;
+                console.log('📍 Found workspace pattern:', pattern, 'at index:', index);
+                break;
             }
         }
         
-        const fileNode = this.canvasState.createFileNode(relativeFilePath, x, y);
-        // Store the full path for debugging
-        fileNode.fullPath = filePath;
-        console.log('✅ File node created:', fileNode.id, 'with relative path:', relativeFilePath, 'full path:', filePath);
+        if (workspaceIndex !== -1) {
+            // Return path relative to the workspace folder
+            const relativeParts = pathParts.slice(workspaceIndex + 1);
+            const relativePath = relativeParts.join('/');
+            console.log('📍 Converted absolute to relative:', filePath, '->', relativePath);
+            return relativePath;
+        }
+        
+        // Fallback: preserve directory structure from the last 2 components
+        // This ensures we don't lose folder information like "Clippings/file.md"
+        if (pathParts.length >= 2) {
+            const relativeParts = pathParts.slice(-2); // Keep last directory + filename
+            const relativePath = relativeParts.join('/');
+            console.log('📍 Using last 2 path components:', relativePath);
+            return relativePath;
+        }
+        
+        // Last resort: just the filename
+        const filename = pathParts[pathParts.length - 1];
+        console.log('📍 Using filename as final fallback:', filename);
+        return filename;
     }
     
     promptForFileImport(file, x, y) {
