@@ -5,6 +5,26 @@ All notable changes to the "Infinite Canvas" extension will be documented in thi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] - 2025-01-08
+
+### Fixed
+- 🔧 **File Path Handling**
+  - Fixed file path handling to use only relative paths in .canvas files
+  - Resolved doubled path issue that prevented loading files from subdirectories
+  - Improved path conversion logic to preserve directory structure (e.g., "Clippings/file.md")
+  - Fixed compatibility with existing canvas files containing problematic absolute paths
+
+### Changed
+- 🔄 **Path Architecture**
+  - Simplified file path architecture to consistently use workspace-relative paths
+  - Enhanced path normalization for better cross-platform compatibility
+  - Removed backward compatibility for absolute paths (MVP approach)
+
+## [0.1.1] - 2024-12-21
+
+### Fixed
+- Minor bug fixes and stability improvements
+
 ## [0.1.0] - 2024-12-20
 
 ### Added
