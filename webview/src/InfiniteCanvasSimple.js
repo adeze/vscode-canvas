@@ -29,6 +29,9 @@ export class InfiniteCanvas {
         this.aiManager = null;
         this.uiManager = new UIManager(this);
         
+        // Make debug method globally accessible for troubleshooting
+        window.checkActiveModels = () => this.uiManager.checkActiveModels();
+        
         // Initialize markdown renderer modules
         this.markdownRenderer = null;
         this.parseMarkdown = null;
@@ -3622,7 +3625,12 @@ class UIManager {
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
             checkbox.id = `model-${model}`;
-            checkbox.checked = true; // Default to checked
+            
+            // Read actual state from localStorage instead of defaulting to true
+            const activeModels = JSON.parse(localStorage.getItem('ai_active_models') || '{}');
+            checkbox.checked = activeModels[model] !== false; // Default to checked if not explicitly set to false
+            
+            console.log(`🔧 Model ${model}: stored=${activeModels[model]}, checkbox=${checkbox.checked}`);
             checkbox.style.cssText = `
                 margin-right: 6px;
                 accent-color: #667eea;
@@ -3686,6 +3694,44 @@ class UIManager {
         });
         
         console.log(selectAll ? '✅ Selected all models' : '❌ Deselected all models');
+    }
+    
+    // Debug helper method to check current active models state
+    checkActiveModels() {
+        const allModels = this.getStoredModels() || [];
+        const activeModels = JSON.parse(localStorage.getItem('ai_active_models') || '{}');
+        
+        console.log('🔍 MODEL STATUS REPORT:');
+        console.log('📋 All configured models:', allModels);
+        console.log('💾 Active models in localStorage:', activeModels);
+        
+        const activeList = [];
+        const inactiveList = [];
+        
+        allModels.forEach(model => {
+            const isActive = activeModels[model] !== false;
+            const checkbox = document.getElementById(`model-${model}`);
+            const checkboxState = checkbox ? checkbox.checked : 'checkbox not found';
+            
+            console.log(`   ${model}: localStorage=${activeModels[model]} | checkbox=${checkboxState} | final=${isActive}`);
+            
+            if (isActive) {
+                activeList.push(model);
+            } else {
+                inactiveList.push(model);
+            }
+        });
+        
+        console.log(`✅ ACTIVE (${activeList.length}):`, activeList);
+        console.log(`❌ INACTIVE (${inactiveList.length}):`, inactiveList);
+        
+        return {
+            allModels,
+            activeModels,
+            activeList,
+            inactiveList,
+            activeCount: activeList.length
+        };
     }
     
     updateFloatingButton() {
