@@ -2897,24 +2897,24 @@ class UIManager {
         // Create floating generate button (initially hidden)
         const generateBtn = document.createElement('button');
         generateBtn.id = 'floating-generate-btn';
-        generateBtn.innerHTML = '✨';
+        generateBtn.innerHTML = '✦';
         generateBtn.title = 'Generate AI ideas';
         generateBtn.style.cssText = `
             position: absolute;
-            width: 40px;
-            height: 40px;
+            width: 36px;
+            height: 36px;
             padding: 0;
-            border: none;
-            border-radius: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            background: rgba(38, 38, 38, 0.9);
+            color: rgba(255, 255, 255, 0.85);
             cursor: pointer;
             font-size: 16px;
-            font-weight: 500;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-            backdrop-filter: blur(10px);
-            transition: all 0.2s ease;
+            font-weight: 400;
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(20px);
+            transition: all 0.15s cubic-bezier(0.4, 0.0, 0.2, 1);
             z-index: 1000;
             user-select: none;
             display: flex;
@@ -2926,13 +2926,17 @@ class UIManager {
         generateBtn.style.display = 'none';
         
         generateBtn.addEventListener('mouseenter', () => {
-            generateBtn.style.transform = 'translateY(-2px) scale(1.05)';
-            generateBtn.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.4)';
+            generateBtn.style.background = 'rgba(48, 48, 48, 0.95)';
+            generateBtn.style.borderColor = 'rgba(255, 255, 255, 0.18)';
+            generateBtn.style.color = 'rgba(255, 255, 255, 1)';
+            generateBtn.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.15)';
         });
         
         generateBtn.addEventListener('mouseleave', () => {
-            generateBtn.style.transform = 'translateY(0) scale(1)';
-            generateBtn.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.3)';
+            generateBtn.style.background = 'rgba(38, 38, 38, 0.9)';
+            generateBtn.style.borderColor = 'rgba(255, 255, 255, 0.12)';
+            generateBtn.style.color = 'rgba(255, 255, 255, 0.85)';
+            generateBtn.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1)';
         });
         
         generateBtn.addEventListener('click', () => {
@@ -2951,24 +2955,24 @@ class UIManager {
         // Create floating view content button (initially hidden)
         const viewBtn = document.createElement('button');
         viewBtn.id = 'floating-view-btn';
-        viewBtn.innerHTML = '👁️';
+        viewBtn.innerHTML = '⛶';
         viewBtn.title = 'View node content';
         viewBtn.style.cssText = `
             position: absolute;
-            width: 40px;
-            height: 40px;
+            width: 36px;
+            height: 36px;
             padding: 0;
-            border: none;
-            border-radius: 20px;
-            background: linear-gradient(135deg, #2563eb, #3b82f6);
-            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            background: rgba(38, 38, 38, 0.9);
+            color: rgba(255, 255, 255, 0.85);
             cursor: pointer;
             font-size: 16px;
-            font-weight: 500;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-            backdrop-filter: blur(10px);
-            transition: all 0.2s ease;
+            font-weight: 400;
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(20px);
+            transition: all 0.15s cubic-bezier(0.4, 0.0, 0.2, 1);
             z-index: 1000;
             user-select: none;
             display: flex;
@@ -2980,13 +2984,17 @@ class UIManager {
         viewBtn.style.display = 'none';
         
         viewBtn.addEventListener('mouseenter', () => {
-            viewBtn.style.transform = 'translateY(-2px) scale(1.05)';
-            viewBtn.style.boxShadow = '0 6px 20px rgba(37, 99, 235, 0.4)';
+            viewBtn.style.background = 'rgba(48, 48, 48, 0.95)';
+            viewBtn.style.borderColor = 'rgba(255, 255, 255, 0.18)';
+            viewBtn.style.color = 'rgba(255, 255, 255, 1)';
+            viewBtn.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.15)';
         });
         
         viewBtn.addEventListener('mouseleave', () => {
-            viewBtn.style.transform = 'translateY(0) scale(1)';
-            viewBtn.style.boxShadow = '0 4px 12px rgba(37, 99, 235, 0.3)';
+            viewBtn.style.background = 'rgba(38, 38, 38, 0.9)';
+            viewBtn.style.borderColor = 'rgba(255, 255, 255, 0.12)';
+            viewBtn.style.color = 'rgba(255, 255, 255, 0.85)';
+            viewBtn.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1)';
         });
         
         viewBtn.addEventListener('click', (e) => {
@@ -3697,8 +3705,8 @@ class UIManager {
             const screenY = canvasRect.top + nodeTopY * this.canvas.canvasState.scale + this.canvas.canvasState.offsetY;
             
             // Button dimensions and spacing
-            const buttonSize = 40;
-            const buttonSpacing = 8;
+            const buttonSize = 36;
+            const buttonSpacing = 6;
             const totalWidth = (buttonSize * 2) + buttonSpacing;
             
             // Ensure buttons stay within viewport bounds
@@ -3732,11 +3740,11 @@ class UIManager {
             
             // Add generating state visual feedback
             if (node.isGeneratingAI) {
-                this.floatingGenerateBtn.innerHTML = '⏳';
-                this.floatingGenerateBtn.style.opacity = '0.7';
+                this.floatingGenerateBtn.innerHTML = '⟳';
+                this.floatingGenerateBtn.style.opacity = '0.6';
                 this.floatingGenerateBtn.style.cursor = 'not-allowed';
             } else {
-                this.floatingGenerateBtn.innerHTML = '✨';
+                this.floatingGenerateBtn.innerHTML = '✦';
                 this.floatingGenerateBtn.style.opacity = '1';
                 this.floatingGenerateBtn.style.cursor = 'pointer';
             }
