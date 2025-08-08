@@ -117,8 +117,7 @@ export async function generateAIIdeasGroq(selectedNodeText, connectedNodes = [],
             body: JSON.stringify({
                 model: model,
                 messages: messages,
-                temperature: 0.7,
-                max_tokens: fileContent ? 200 : 150 // Allow more tokens for markdown analysis
+                temperature: 0.7
             })
         });
 
