@@ -84,22 +84,29 @@ export async function generateAIIdeasGroq(selectedNodeText, connectedNodes = [],
     if (connectedNodes && connectedNodes.length > 0) {
         // Add connected nodes as previous messages in the conversation
         connectedNodes.forEach(node => {
-            messages.push({ role: "user", content: node.text });
+            if (node.text && typeof node.text === 'string' && node.text.trim()) {
+                messages.push({ role: "user", content: node.text });
+            }
         });
         console.log('📎 Using', connectedNodes.length, 'connected nodes as conversation history');
     }
 
     // Add the current selected node as the latest message
     // If we have file content, include it directly
-    let content = selectedNodeText;
-    if (fileContent) {
-        content = `${selectedNodeText}\n\nFile content:\n${fileContent}`;
+    let content = selectedNodeText || 'Generate ideas';
+    if (fileContent && fileContent.trim()) {
+        content = `${selectedNodeText || 'Analyze file'}\n\nFile content:\n${fileContent}`;
         console.log('📄 Including file content with node text');
+    }
+
+    // Ensure we always have valid content
+    if (!content || typeof content !== 'string' || !content.trim()) {
+        content = 'Generate creative ideas';
     }
 
     messages.push({ role: "user", content: content });
 
-    console.log('💬 Message history:', messages.map(m => m.content.substring(0, 100) + (m.content.length > 100 ? '...' : '')));
+    console.log('💬 Message history:', messages.map(m => (m.content || '').substring(0, 100) + ((m.content || '').length > 100 ? '...' : '')));
 
     try {
         // Use fetch API with configurable base URL

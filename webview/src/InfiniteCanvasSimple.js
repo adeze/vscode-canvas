@@ -2997,6 +2997,55 @@ class UIManager {
         addModelSection.appendChild(modelInput);
         addModelSection.appendChild(addButton);
         modelsContainer.appendChild(addModelSection);
+
+        // Select All/Deselect All buttons section
+        const selectAllSection = document.createElement('div');
+        selectAllSection.style.cssText = `
+            display: flex;
+            gap: 4px;
+            margin-bottom: 6px;
+            align-items: center;
+        `;
+
+        const selectAllBtn = document.createElement('button');
+        selectAllBtn.textContent = 'Select All';
+        selectAllBtn.style.cssText = `
+            flex: 1;
+            padding: 4px 8px;
+            background: #2a7d32;
+            border: none;
+            border-radius: 3px;
+            color: white;
+            font-size: 10px;
+            cursor: pointer;
+            font-weight: bold;
+        `;
+
+        const deselectAllBtn = document.createElement('button');
+        deselectAllBtn.textContent = 'Deselect All';
+        deselectAllBtn.style.cssText = `
+            flex: 1;
+            padding: 4px 8px;
+            background: #c62828;
+            border: none;
+            border-radius: 3px;
+            color: white;
+            font-size: 10px;
+            cursor: pointer;
+            font-weight: bold;
+        `;
+
+        selectAllBtn.addEventListener('click', () => {
+            this.selectAllModels(true);
+        });
+
+        deselectAllBtn.addEventListener('click', () => {
+            this.selectAllModels(false);
+        });
+
+        selectAllSection.appendChild(selectAllBtn);
+        selectAllSection.appendChild(deselectAllBtn);
+        modelsContainer.appendChild(selectAllSection);
         modelsContainer.appendChild(this.modelsListContainer);
         
         modelsSection.appendChild(modelsLabel);
@@ -3240,8 +3289,13 @@ class UIManager {
             // Use the same default models as AIManager - single source of truth
             const defaultModels = [
                 'google/gemini-2.5-flash',
-                'openai/gpt-4.1',
-                'anthropic/claude-sonnet-4'
+                'openai/gpt-oss-120b',
+                'openai/gpt-5',
+                'google/gemini-2.5-pro',
+                'x-ai/grok-4',
+                'qwen/qwen3-235b-a22b-thinking-2507',
+                'anthropic/claude-sonnet-4',
+                'tngtech/deepseek-r1t2-chimera:free'
             ];
             localStorage.setItem('aiModels', JSON.stringify(defaultModels));
         }
@@ -3348,6 +3402,21 @@ class UIManager {
             modelDiv.appendChild(removeBtn);
             this.modelsListContainer.appendChild(modelDiv);
         });
+    }
+    
+    selectAllModels(selectAll) {
+        const models = this.getStoredModels() || [];
+        
+        // Update all checkboxes
+        models.forEach(model => {
+            const checkbox = document.getElementById(`model-${model}`);
+            if (checkbox) {
+                checkbox.checked = selectAll;
+                this.updateModelSelection(model, selectAll);
+            }
+        });
+        
+        console.log(selectAll ? '✅ Selected all models' : '❌ Deselected all models');
     }
     
     updateFloatingButton() {
