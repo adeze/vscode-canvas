@@ -70,3 +70,9 @@ bug is see:
 
 now lets posible for only using relatives files path on     │
 │   the .canvas files, cause creating absolutes path is complating more the file , so to make this change simple, lets jsut no make it backwards comptible,s just make the code work with relative path and thats it,  remember this a mvp so we do not need compatibility
+
+
+lets add the feuature of chaining nodes content , ween we send the nodes to the ai genertae content, i mean 
+    now we connect nodes , we send the conected nodes content also to the ai, but only his parents and parents of parents and so on , like on the web version, 
+
+did you undertand the request ?

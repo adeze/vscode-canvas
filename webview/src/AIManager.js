@@ -109,7 +109,7 @@ export class AIManager {
                 }
             }
 
-            const ancestorNodes = this.getAncestorNodes(sourceNode);
+            const ancestorNodes = await this.getAncestorNodesWithContent(sourceNode);
             // Refresh models from UI panel each time to ensure sync
             this.aiModels = this.getModelsFromUIPanel();
             console.log('🔄 Refreshed models from UI panel:', this.aiModels);
@@ -219,25 +219,36 @@ export class AIManager {
         }
     }
 
-    // Helper method to detect if node represents a markdown file
+    // Helper method to detect if node represents a file that can be loaded
     isMarkdownFile(node) {
         // Check if it's a file node
         if (node.type === 'file') {
             return true; // Assume file nodes should be processed for content
         }
         
-        // Check various node properties for markdown indicators
+        // Check various node properties for file indicators
         const textToCheck = node.text || node.file || node.fullPath || '';
         
         if (!textToCheck || typeof textToCheck !== 'string') {
             return false;
         }
         
-        // Check if the text looks like a file path ending with .md
+        // Check if the text looks like a file path with common extensions
         const trimmed = textToCheck.trim();
-        return trimmed.endsWith('.md') || trimmed.includes('.md ') ||
+        const commonExtensions = ['.md', '.txt', '.json', '.js', '.ts', '.html', '.css', '.py', '.java', '.cpp', '.c'];
+        
+        // Check for any common file extension
+        const hasFileExtension = commonExtensions.some(ext => 
+            trimmed.endsWith(ext) || trimmed.includes(ext + ' ')
+        );
+        
+        // Also check if it looks like a file path (contains / or \)
+        const looksLikeFilePath = (trimmed.includes('/') || trimmed.includes('\\')) && 
+                                 (trimmed.includes('.') || trimmed.toLowerCase().includes('file'));
+        
+        return hasFileExtension || looksLikeFilePath ||
                trimmed.toLowerCase().includes('markdown') ||
-               (trimmed.includes('/') && trimmed.endsWith('.md'));
+               trimmed.toLowerCase().includes('clippings');
     }
 
     // Helper method to get file content from VS Code
@@ -330,6 +341,50 @@ export class AIManager {
         };
         
         findAncestors(node);
+        return ancestors;
+    }
+    
+    // Enhanced method to get ancestor nodes with their content loaded
+    async getAncestorNodesWithContent(node) {
+        const ancestors = this.getAncestorNodes(node);
+        console.log(`🔗 Found ${ancestors.length} ancestor nodes, loading content...`);
+        
+        // Load content for each ancestor node that represents a file
+        for (const ancestor of ancestors) {
+            const isFileNode = this.isMarkdownFile(ancestor) || ancestor.type === 'file';
+            
+            console.log(`🔍 Checking ancestor node:`, {
+                id: ancestor.id,
+                text: ancestor.text,
+                file: ancestor.file,
+                fullPath: ancestor.fullPath,
+                type: ancestor.type,
+                isFileNode: isFileNode,
+                hasContent: !!ancestor.content,
+                hasLoadedContent: !!ancestor.loadedContent
+            });
+            
+            if (isFileNode && !ancestor.loadedContent) {
+                console.log(`📄 Loading content for ancestor file node: ${ancestor.text || ancestor.file || ancestor.fullPath}`);
+                try {
+                    const content = await this.getFileContent(ancestor);
+                    if (content && content.trim()) {
+                        // Store the content in the ancestor node for the AI to use
+                        ancestor.loadedContent = content;
+                        console.log(`✅ Loaded ${content.length} characters for ancestor node`);
+                    } else {
+                        console.log(`⚠️ No content returned for ancestor file node`);
+                    }
+                } catch (error) {
+                    console.warn(`⚠️ Failed to load content for ancestor node:`, error);
+                }
+            } else if (!isFileNode) {
+                console.log(`📝 Ancestor is not a file node, using text content directly`);
+            } else {
+                console.log(`📋 Ancestor already has loaded content, using existing`);
+            }
+        }
+        
         return ancestors;
     }
     

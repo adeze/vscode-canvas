@@ -82,10 +82,42 @@ export async function generateAIIdeasGroq(selectedNodeText, connectedNodes = [],
     let messages = [];
 
     if (connectedNodes && connectedNodes.length > 0) {
+        // Debug: log the ancestor nodes structure
+        console.log('🔍 Ancestor nodes debug:', connectedNodes.map(node => ({
+            id: node.id,
+            text: node.text,
+            file: node.file,
+            fullPath: node.fullPath,
+            type: node.type,
+            hasText: !!node.text,
+            textLength: node.text ? node.text.length : 0
+        })));
+        
         // Add connected nodes as previous messages in the conversation
         connectedNodes.forEach(node => {
-            if (node.text && typeof node.text === 'string' && node.text.trim()) {
-                messages.push({ role: "user", content: node.text });
+            // Enhanced logic to handle different node types
+            let nodeContent = null;
+            
+            // Try to get content from different node properties
+            // Priority: loadedContent > text > file > fullPath
+            if (node.loadedContent && typeof node.loadedContent === 'string' && node.loadedContent.trim()) {
+                // If we have loaded file content, use it with a description
+                const fileName = node.text || node.file || node.fullPath || 'file';
+                nodeContent = `File: ${fileName}\n\nContent:\n${node.loadedContent.trim()}`;
+                console.log(`📄 Using loaded file content for ancestor (${node.loadedContent.length} chars)`);
+            } else if (node.text && typeof node.text === 'string' && node.text.trim()) {
+                nodeContent = node.text.trim();
+            } else if (node.file && typeof node.file === 'string' && node.file.trim()) {
+                nodeContent = node.file.trim();
+            } else if (node.fullPath && typeof node.fullPath === 'string' && node.fullPath.trim()) {
+                nodeContent = node.fullPath.trim();
+            }
+            
+            if (nodeContent) {
+                messages.push({ role: "user", content: nodeContent });
+                console.log('📎 Added ancestor node content:', nodeContent.substring(0, 100) + '...');
+            } else {
+                console.log('⚠️ Skipping ancestor node - no valid content:', { id: node.id, text: node.text });
             }
         });
         console.log('📎 Using', connectedNodes.length, 'connected nodes as conversation history');
