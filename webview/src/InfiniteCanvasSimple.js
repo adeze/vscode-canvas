@@ -761,6 +761,15 @@ class InputHandler {
                 return;
             }
             
+            // Check if clicking on view button for file nodes
+            if (clickedNode.type === 'file' && clickedNode._viewButtonBounds &&
+                this.isPointInRect(canvasX, canvasY, clickedNode._viewButtonBounds)) {
+                console.log('👁️ View button clicked during mouse down:', clickedNode.file);
+                this.openContentModal(clickedNode);
+                this.isDragging = false;
+                return;
+            }
+            
             // Check if clicking on edit button for file nodes
             if (clickedNode.type === 'file' && clickedNode._editButtonBounds &&
                 this.isPointInRect(canvasX, canvasY, clickedNode._editButtonBounds)) {
@@ -769,6 +778,7 @@ class InputHandler {
                 this.isDragging = false;
                 return;
             }
+            
             
             // Normal node interaction
             this.canvasState.selectNode(clickedNode);
@@ -1090,8 +1100,11 @@ class InputHandler {
         
         if (clickedNode) {
             if (clickedNode.type === 'file') {
-                // Check if clicking on edit button
-                if (clickedNode._editButtonBounds && this.isPointInRect(canvasX, canvasY, clickedNode._editButtonBounds)) {
+                // Check if clicking on view button
+                if (clickedNode._viewButtonBounds && this.isPointInRect(canvasX, canvasY, clickedNode._viewButtonBounds)) {
+                    console.log('👁️ View button clicked for:', clickedNode.file);
+                    this.openContentModal(clickedNode);
+                } else if (clickedNode._editButtonBounds && this.isPointInRect(canvasX, canvasY, clickedNode._editButtonBounds)) {
                     console.log('🔘 Edit button clicked for:', clickedNode.file);
                     this.editFileNodeSimple(clickedNode);
                 } else {
@@ -1765,6 +1778,161 @@ class InputHandler {
         this.requestRender = callback;
         console.log('🎨 Render callback set for InputHandler');
     }
+    
+    // Open content modal for viewing node content in a readable format
+    openContentModal(node) {
+        console.log('👁️ Opening content modal for node:', node);
+        
+        // Get content based on node type
+        let content = '';
+        let title = '';
+        
+        if (node.type === 'file') {
+            title = `📄 ${node.file.split('/').pop() || node.file}`;
+            content = node.content || 'File content not loaded';
+        } else {
+            title = `📝 Node Content`;
+            content = node.text || 'No content available';
+        }
+        
+        // Remove any existing modal
+        const existingModal = document.getElementById('content-modal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        
+        // Create modal overlay
+        const modalOverlay = document.createElement('div');
+        modalOverlay.id = 'content-modal';
+        modalOverlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            backdrop-filter: blur(4px);
+        `;
+        
+        // Create modal container
+        const modalContainer = document.createElement('div');
+        modalContainer.style.cssText = `
+            background: #1e1e1e;
+            border: 2px solid #444;
+            border-radius: 8px;
+            max-width: 80%;
+            max-height: 80%;
+            width: 800px;
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        `;
+        
+        // Create modal header
+        const modalHeader = document.createElement('div');
+        modalHeader.style.cssText = `
+            padding: 16px 20px;
+            border-bottom: 1px solid #444;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #2d2d2d;
+            border-radius: 6px 6px 0 0;
+        `;
+        
+        const modalTitle = document.createElement('h3');
+        modalTitle.textContent = title;
+        modalTitle.style.cssText = `
+            margin: 0;
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 600;
+        `;
+        
+        const closeButton = document.createElement('button');
+        closeButton.innerHTML = '✕';
+        closeButton.style.cssText = `
+            background: none;
+            border: none;
+            color: #999;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        `;
+        closeButton.onmouseover = () => {
+            closeButton.style.background = '#444';
+            closeButton.style.color = '#fff';
+        };
+        closeButton.onmouseout = () => {
+            closeButton.style.background = 'none';
+            closeButton.style.color = '#999';
+        };
+        
+        // Create modal body
+        const modalBody = document.createElement('div');
+        modalBody.style.cssText = `
+            flex: 1;
+            padding: 20px;
+            overflow: auto;
+            background: #1a1a1a;
+            border-radius: 0 0 6px 6px;
+        `;
+        
+        const contentArea = document.createElement('pre');
+        contentArea.textContent = content;
+        contentArea.style.cssText = `
+            color: #e0e0e0;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 14px;
+            line-height: 1.6;
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            background: none;
+            border: none;
+            outline: none;
+        `;
+        
+        // Assemble modal
+        modalHeader.appendChild(modalTitle);
+        modalHeader.appendChild(closeButton);
+        modalBody.appendChild(contentArea);
+        modalContainer.appendChild(modalHeader);
+        modalContainer.appendChild(modalBody);
+        modalOverlay.appendChild(modalContainer);
+        
+        // Add event listeners
+        closeButton.addEventListener('click', () => {
+            modalOverlay.remove();
+        });
+        
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) {
+                modalOverlay.remove();
+            }
+        });
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                modalOverlay.remove();
+            }
+        }, { once: true });
+        
+        // Add to DOM
+        document.body.appendChild(modalOverlay);
+        
+        // Focus the content area for better UX
+        contentArea.scrollTop = 0;
+        
+        console.log('✅ Content modal opened successfully');
+    }
 }
 
 // Simplified Canvas Renderer
@@ -1978,6 +2146,7 @@ class CanvasRenderer {
         if (showConnectionPoints) {
             this.drawConnectionPoints(ctx, node, inputHandler);
         }
+        
         
         // Draw resize handles if node is selected
         if (node.isSelected) {
@@ -2212,6 +2381,35 @@ class CanvasRenderer {
         const fileIcon = fileName.endsWith('.md') ? '📄' : '📋';
         
         ctx.fillText(`${fileIcon} ${fileName}`, node.x + 12, node.y + headerHeight / 2);
+        
+        // Draw view content button
+        const viewButtonX = node.x + node.width - 115;
+        const viewButtonY = node.y + 8;
+        const viewButtonWidth = 50;
+        const viewButtonHeight = 24;
+        
+        // View button background
+        ctx.fillStyle = '#2563eb';
+        ctx.fillRect(viewButtonX, viewButtonY, viewButtonWidth, viewButtonHeight);
+        
+        // View button border
+        ctx.strokeStyle = '#3b82f6';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(viewButtonX, viewButtonY, viewButtonWidth, viewButtonHeight);
+        
+        // View button text
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '10px Segoe UI, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('View', viewButtonX + viewButtonWidth / 2, viewButtonY + viewButtonHeight / 2 + 2);
+        
+        // Store view button bounds for click detection
+        node._viewButtonBounds = {
+            x: viewButtonX,
+            y: viewButtonY,
+            width: viewButtonWidth,
+            height: viewButtonHeight
+        };
         
         // Draw edit button
         const editButtonX = node.x + node.width - 60;
@@ -2688,6 +2886,7 @@ class UIManager {
     
     setupUI() {
         this.createFloatingGenerateButton();
+        this.createFloatingViewButton();
         this.createNotificationContainer();
         this.createConfigButton();
         this.createConfigPanel();
@@ -2702,33 +2901,38 @@ class UIManager {
         generateBtn.title = 'Generate AI ideas';
         generateBtn.style.cssText = `
             position: absolute;
-            padding: 4px 8px;
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            border: none;
+            border-radius: 20px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            border: none;
-            border-radius: 12px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 16px;
             font-weight: 500;
-            z-index: 1000;
-            display: none;
-            transform: translateX(-50%);
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            min-width: 24px;
-            height: 24px;
-            line-height: 1;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            backdrop-filter: blur(10px);
+            transition: all 0.2s ease;
+            z-index: 1000;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         `;
         
+        // Initially hidden
+        generateBtn.style.display = 'none';
+        
         generateBtn.addEventListener('mouseenter', () => {
-            generateBtn.style.transform = 'translateX(-50%) translateY(-2px)';
-            generateBtn.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)';
+            generateBtn.style.transform = 'translateY(-2px) scale(1.05)';
+            generateBtn.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.4)';
         });
         
         generateBtn.addEventListener('mouseleave', () => {
-            generateBtn.style.transform = 'translateX(-50%) translateY(0)';
-            generateBtn.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.3)';
+            generateBtn.style.transform = 'translateY(0) scale(1)';
+            generateBtn.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.3)';
         });
         
         generateBtn.addEventListener('click', () => {
@@ -2741,6 +2945,63 @@ class UIManager {
         
         document.body.appendChild(generateBtn);
         this.floatingGenerateBtn = generateBtn;
+    }
+    
+    createFloatingViewButton() {
+        // Create floating view content button (initially hidden)
+        const viewBtn = document.createElement('button');
+        viewBtn.id = 'floating-view-btn';
+        viewBtn.innerHTML = '👁️';
+        viewBtn.title = 'View node content';
+        viewBtn.style.cssText = `
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            border: none;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #2563eb, #3b82f6);
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+            backdrop-filter: blur(10px);
+            transition: all 0.2s ease;
+            z-index: 1000;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        `;
+        
+        // Initially hidden
+        viewBtn.style.display = 'none';
+        
+        viewBtn.addEventListener('mouseenter', () => {
+            viewBtn.style.transform = 'translateY(-2px) scale(1.05)';
+            viewBtn.style.boxShadow = '0 6px 20px rgba(37, 99, 235, 0.4)';
+        });
+        
+        viewBtn.addEventListener('mouseleave', () => {
+            viewBtn.style.transform = 'translateY(0) scale(1)';
+            viewBtn.style.boxShadow = '0 4px 12px rgba(37, 99, 235, 0.3)';
+        });
+        
+        viewBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const selectedNodes = this.canvas.canvasState.selectedNodes;
+            if (selectedNodes.length === 1) {
+                console.log('👁️ Floating view button clicked for node:', selectedNodes[0]);
+                this.canvas.inputHandler.openContentModal(selectedNodes[0]);
+            }
+        });
+        
+        document.body.appendChild(viewBtn);
+        this.floatingViewBtn = viewBtn;
     }
     
     createConfigButton() {
@@ -3420,27 +3681,54 @@ class UIManager {
     }
     
     updateFloatingButton() {
-        if (!this.floatingGenerateBtn) return;
+        if (!this.floatingGenerateBtn || !this.floatingViewBtn) return;
         
         const selectedNodes = this.canvas.canvasState.selectedNodes;
         
         if (selectedNodes.length === 1) {
-            // Show button above the selected node
             const node = selectedNodes[0];
             const canvasRect = this.canvas.canvas.getBoundingClientRect();
             
-            // Calculate position in screen coordinates - position above the node, no collision
-            const screenX = canvasRect.left + (node.x + node.width - 12) * this.canvas.canvasState.scale + this.canvas.canvasState.offsetX;
-            const screenY = canvasRect.top + (node.y - 35) * this.canvas.canvasState.scale + this.canvas.canvasState.offsetY;
+            // Calculate position in screen coordinates - center top of the node
+            const nodeCenterX = node.x + node.width / 2;
+            const nodeTopY = node.y - 50; // Position above the node
             
-            // Ensure button stays within viewport bounds
-            const buttonWidth = 24; // small button width
-            const clampedX = Math.max(buttonWidth / 2, Math.min(window.innerWidth - buttonWidth / 2, screenX));
-            const clampedY = Math.max(30, screenY); // Keep 30px from top
+            const screenX = canvasRect.left + nodeCenterX * this.canvas.canvasState.scale + this.canvas.canvasState.offsetX;
+            const screenY = canvasRect.top + nodeTopY * this.canvas.canvasState.scale + this.canvas.canvasState.offsetY;
             
-            this.floatingGenerateBtn.style.left = `${clampedX}px`;
-            this.floatingGenerateBtn.style.top = `${clampedY}px`;
-            this.floatingGenerateBtn.style.display = 'block';
+            // Button dimensions and spacing
+            const buttonSize = 40;
+            const buttonSpacing = 8;
+            const totalWidth = (buttonSize * 2) + buttonSpacing;
+            
+            // Ensure buttons stay within viewport bounds
+            const clampedX = Math.max(totalWidth / 2, Math.min(window.innerWidth - totalWidth / 2, screenX));
+            const clampedY = Math.max(30, Math.min(window.innerHeight - 60, screenY)); // Keep from top and bottom
+            
+            // Check if node has substantial content for view button
+            const hasSubstantialContent = (node.type === 'file') || 
+                                        (node.text && node.text.length > 100);
+            
+            if (hasSubstantialContent) {
+                // Show both buttons side by side, centered above the node
+                const generateX = clampedX - (buttonSize / 2) - (buttonSpacing / 2);
+                const viewX = clampedX + (buttonSize / 2) + (buttonSpacing / 2);
+                
+                this.floatingGenerateBtn.style.left = `${generateX - buttonSize / 2}px`;
+                this.floatingGenerateBtn.style.top = `${clampedY}px`;
+                this.floatingGenerateBtn.style.display = 'flex';
+                
+                this.floatingViewBtn.style.left = `${viewX - buttonSize / 2}px`;
+                this.floatingViewBtn.style.top = `${clampedY}px`;
+                this.floatingViewBtn.style.display = 'flex';
+            } else {
+                // Show only generate button (perfectly centered above node)
+                this.floatingGenerateBtn.style.left = `${clampedX - buttonSize / 2}px`;
+                this.floatingGenerateBtn.style.top = `${clampedY}px`;
+                this.floatingGenerateBtn.style.display = 'flex';
+                
+                this.floatingViewBtn.style.display = 'none';
+            }
             
             // Add generating state visual feedback
             if (node.isGeneratingAI) {
@@ -3453,14 +3741,18 @@ class UIManager {
                 this.floatingGenerateBtn.style.cursor = 'pointer';
             }
         } else {
-            // Hide button when no single node is selected
+            // Hide buttons when no single node is selected
             this.floatingGenerateBtn.style.display = 'none';
+            this.floatingViewBtn.style.display = 'none';
         }
     }
     
     hideFloatingButton() {
         if (this.floatingGenerateBtn) {
             this.floatingGenerateBtn.style.display = 'none';
+        }
+        if (this.floatingViewBtn) {
+            this.floatingViewBtn.style.display = 'none';
         }
     }
     
@@ -3546,4 +3838,5 @@ class UIManager {
             default: return '#3b82f6';
         }
     }
+    
 }
