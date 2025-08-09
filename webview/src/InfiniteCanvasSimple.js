@@ -29,6 +29,9 @@ export class InfiniteCanvas {
         this.aiManager = null;
         this.uiManager = new UIManager(this);
         
+        // Clipboard for copy/paste functionality
+        this.clipboard = [];
+        
         // Make debug method globally accessible for troubleshooting
         window.checkActiveModels = () => this.uiManager.checkActiveModels();
         
@@ -1166,6 +1169,73 @@ class InputHandler {
             this.connectionStartPoint = null;
             this.canvas.style.cursor = 'default';
             e.preventDefault();
+        }
+        
+        // Copy selected nodes (Cmd+C or Ctrl+C)
+        if ((e.metaKey || e.ctrlKey) && e.key === 'c' && this.canvasState.selectedNodes.length > 0) {
+            console.log('📋 Copying nodes:', this.canvasState.selectedNodes.map(n => n.id));
+            this.clipboard = this.canvasState.selectedNodes.map(node => ({
+                // Create a deep copy of the node data
+                text: node.text,
+                type: node.type,
+                width: node.width,
+                height: node.height,
+                file: node.file,
+                fullPath: node.fullPath,
+                content: node.content,
+                isContentLoaded: node.isContentLoaded,
+                aiModel: node.aiModel
+            }));
+            console.log(`✅ Copied ${this.clipboard.length} node(s) to clipboard`);
+            e.preventDefault();
+            return;
+        }
+        
+        // Paste nodes (Cmd+V or Ctrl+V)
+        if ((e.metaKey || e.ctrlKey) && e.key === 'v' && this.clipboard.length > 0) {
+            console.log('📋 Pasting nodes from clipboard:', this.clipboard.length);
+            
+            // Get the canvas center or use current mouse position as paste location
+            const rect = this.canvas.getBoundingClientRect();
+            const centerX = (this.canvas.width / 2 - this.canvasState.offsetX) / this.canvasState.scale;
+            const centerY = (this.canvas.height / 2 - this.canvasState.offsetY) / this.canvasState.scale;
+            
+            // Calculate offset to avoid overlapping with original nodes
+            const PASTE_OFFSET = 50;
+            const newNodes = [];
+            
+            // Clear current selection
+            this.canvasState.clearSelection();
+            
+            // Create new nodes from clipboard
+            this.clipboard.forEach((nodeData, index) => {
+                const newNode = this.canvasState.createNode(
+                    nodeData.text || 'Pasted Node',
+                    centerX + (index * PASTE_OFFSET),
+                    centerY + (index * PASTE_OFFSET)
+                );
+                
+                // Copy additional properties
+                if (nodeData.type) newNode.type = nodeData.type;
+                if (nodeData.width) newNode.width = nodeData.width;
+                if (nodeData.height) newNode.height = nodeData.height;
+                if (nodeData.file) newNode.file = nodeData.file;
+                if (nodeData.fullPath) newNode.fullPath = nodeData.fullPath;
+                if (nodeData.content) newNode.content = nodeData.content;
+                if (nodeData.isContentLoaded) newNode.isContentLoaded = nodeData.isContentLoaded;
+                if (nodeData.aiModel) newNode.aiModel = nodeData.aiModel;
+                
+                newNodes.push(newNode);
+                console.log('📋 Pasted node:', newNode.id, 'at', { x: newNode.x, y: newNode.y });
+            });
+            
+            // Select the newly pasted nodes
+            this.canvasState.selectedNodes = newNodes;
+            newNodes.forEach(node => node.isSelected = true);
+            
+            console.log(`✅ Pasted ${newNodes.length} node(s) successfully`);
+            e.preventDefault();
+            return;
         }
     }
     

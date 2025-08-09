@@ -76,3 +76,12 @@ lets add the feuature of chaining nodes content , ween we send the nodes to the 
     now we connect nodes , we send the conected nodes content also to the ai, but only his parents and parents of parents and so on , like on the web version, 
 
 did you undertand the request ?
+
+
+now lets make easy copy and paste nodes inside the canvas , with comand c and v 
+
+
+
+now lets make easy to open .canvas files, i mean rigth now i haveto make anticlick and chose open with "infinite canvas" i want to always open the .canvas by default with this mode \
+
+also add the icon to my .canvas files, 

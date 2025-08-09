@@ -1,0 +1,8 @@
+{
+  "workbench.editorAssociations": {
+    "*.canvas": "infinite-canvas.canvasEditor"
+  },
+  "files.associations": {
+    "*.canvas": "canvas"
+  }
+}

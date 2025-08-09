@@ -30,9 +30,18 @@
   ],
   "main": "./out/extension.js",
   "activationEvents": [
-    "onCustomEditor:infinite-canvas.canvasEditor"
+    "onCustomEditor:infinite-canvas.canvasEditor",
+    "onLanguage:canvas"
   ],
   "contributes": {
+    "languages": [
+      {
+        "id": "canvas",
+        "aliases": ["Canvas", "canvas"],
+        "extensions": [".canvas"],
+        "mimetypes": ["application/json"]
+      }
+    ],
     "customEditors": [
       {
         "viewType": "infinite-canvas.canvasEditor",
@@ -45,6 +54,14 @@
         "priority": "default"
       }
     ],
+    "configurationDefaults": {
+      "files.associations": {
+        "*.canvas": "canvas"
+      },
+      "workbench.editorAssociations": {
+        "*.canvas": "default"
+      }
+    },
     "commands": [
       {
         "command": "infinite-canvas.newCanvas",
