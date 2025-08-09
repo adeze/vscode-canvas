@@ -39,7 +39,11 @@
         "id": "canvas",
         "aliases": ["Canvas", "canvas"],
         "extensions": [".canvas"],
-        "mimetypes": ["application/json"]
+        "mimetypes": ["application/json"],
+        "icon": {
+          "light": "./icon.svg",
+          "dark": "./icon.svg"
+        }
       }
     ],
     "customEditors": [
