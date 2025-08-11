@@ -92,3 +92,6 @@ lets improve the loading button on the "generate ai ideas", cause this button im
 
 
 now lets the messages that appear for seconds on the left top lets move it to the rigth top, 
+
+
+now for some reason the grow node is not working well, the rigth grow and the bottom grow works well but the left and top instead of growing the node, they move the node , find the bug and fix that

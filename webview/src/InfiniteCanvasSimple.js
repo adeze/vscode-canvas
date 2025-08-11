@@ -3627,7 +3627,7 @@ class UIManager {
         container.style.cssText = `
             position: fixed;
             top: 20px;
-            left: 20px;
+            right: 20px;
             z-index: 10000;
             pointer-events: none;
         `;
@@ -3933,12 +3933,12 @@ class UIManager {
             style.id = 'notification-styles';
             style.textContent = `
                 @keyframes slideIn {
-                    from { transform: translateX(-100%); opacity: 0; }
+                    from { transform: translateX(100%); opacity: 0; }
                     to { transform: translateX(0); opacity: 1; }
                 }
                 @keyframes slideOut {
                     from { transform: translateX(0); opacity: 1; }
-                    to { transform: translateX(-100%); opacity: 0; }
+                    to { transform: translateX(100%); opacity: 0; }
                 }
             `;
             document.head.appendChild(style);
