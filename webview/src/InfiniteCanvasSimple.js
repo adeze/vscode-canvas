@@ -752,6 +752,8 @@ class InputHandler {
                 this.resizeStartY = canvasY;
                 this.resizeStartWidth = clickedNode.width;
                 this.resizeStartHeight = clickedNode.height;
+                this.resizeStartNodeX = clickedNode.x;
+                this.resizeStartNodeY = clickedNode.y;
                 this.isDragging = false;
                 return;
             }
@@ -864,8 +866,8 @@ class InputHandler {
             // Calculate new dimensions based on resize handle type
             let newWidth = this.resizeStartWidth;
             let newHeight = this.resizeStartHeight;
-            let newX = node.x;
-            let newY = node.y;
+            let newX = this.resizeStartNodeX;
+            let newY = this.resizeStartNodeY;
             
             switch (handle.type) {
                 case 'se': // Southeast (bottom-right)
@@ -875,32 +877,31 @@ class InputHandler {
                 case 'sw': // Southwest (bottom-left)
                     newWidth = Math.max(minWidth, this.resizeStartWidth - deltaX);
                     newHeight = Math.max(minHeight, this.resizeStartHeight + deltaY);
-                    newX = node.x + (this.resizeStartWidth - newWidth);
+                    // Keep position unchanged - only grow size
                     break;
                 case 'ne': // Northeast (top-right)
                     newWidth = Math.max(minWidth, this.resizeStartWidth + deltaX);
                     newHeight = Math.max(minHeight, this.resizeStartHeight - deltaY);
-                    newY = node.y + (this.resizeStartHeight - newHeight);
+                    // Keep position unchanged - only grow size
                     break;
                 case 'nw': // Northwest (top-left)
                     newWidth = Math.max(minWidth, this.resizeStartWidth - deltaX);
                     newHeight = Math.max(minHeight, this.resizeStartHeight - deltaY);
-                    newX = node.x + (this.resizeStartWidth - newWidth);
-                    newY = node.y + (this.resizeStartHeight - newHeight);
+                    // Keep position unchanged - only grow size
                     break;
                 case 'e': // East (right edge)
                     newWidth = Math.max(minWidth, this.resizeStartWidth + deltaX);
                     break;
                 case 'w': // West (left edge)
                     newWidth = Math.max(minWidth, this.resizeStartWidth - deltaX);
-                    newX = node.x + (this.resizeStartWidth - newWidth);
+                    // Keep position unchanged - only grow size
                     break;
                 case 's': // South (bottom edge)
                     newHeight = Math.max(minHeight, this.resizeStartHeight + deltaY);
                     break;
                 case 'n': // North (top edge)
                     newHeight = Math.max(minHeight, this.resizeStartHeight - deltaY);
-                    newY = node.y + (this.resizeStartHeight - newHeight);
+                    // Keep position unchanged - only grow size
                     break;
             }
             
