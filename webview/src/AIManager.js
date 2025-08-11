@@ -82,6 +82,10 @@ export class AIManager {
 
         try {
             sourceNode.isGeneratingAI = true;
+            // Update button state immediately to show loading
+            if (this.uiManager && this.uiManager.updateFloatingButton) {
+                this.uiManager.updateFloatingButton();
+            }
             console.log('🎯 Generating ideas for:', sourceNode.text);
 
             // Check if this is a markdown file and get its content

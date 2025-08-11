@@ -85,3 +85,10 @@ now lets make easy copy and paste nodes inside the canvas , with comand c and v
 now lets make easy to open .canvas files, i mean rigth now i haveto make anticlick and chose open with "infinite canvas" i want to always open the .canvas by default with this mode \
 
 also add the icon to my .canvas files, 
+
+
+lets improve the loading button on the "generate ai ideas", cause this button image loading is not working correctly, i mean its not changing to loading when i press it,  i have to unclick the node and click it again to see the cahnge of the icon, fix this, the change should be insntant? 
+
+
+
+now lets the messages that appear for seconds on the left top lets move it to the rigth top, 
