@@ -1508,8 +1508,9 @@ class InputHandler {
             border: 2px solid var(--vscode-focusBorder, #007fd4);
             border-radius: 8px;
             padding: 8px;
-            font-size: 14px;
+            font-size: 16px;
             font-family: var(--vscode-font-family, 'Segoe UI');
+            line-height: 1.4;
             resize: none;
             outline: none;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
@@ -2014,7 +2015,7 @@ class InputHandler {
         input.style.color = '#cccccc';
         input.style.border = '2px solid #007fd4';
         input.style.padding = '8px';
-        input.style.fontSize = '14px';
+        input.style.fontSize = '16px';
         input.style.width = '300px';
         
         document.body.appendChild(input);
@@ -2327,7 +2328,7 @@ class InputHandler {
         contentArea.style.cssText = `
             color: #e0e0e0;
             font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
-            font-size: 14px;
+            font-size: 16px;
             line-height: 1.6;
             margin: 0;
             white-space: pre-wrap;
@@ -2489,7 +2490,7 @@ class CanvasRenderer {
         
         // Draw text with scrolling
         ctx.fillStyle = node.textColor;
-        ctx.font = '14px Segoe UI, sans-serif';
+        ctx.font = '16px Segoe UI, sans-serif';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'top';
         
@@ -2642,28 +2643,28 @@ class CanvasRenderer {
     
     getFontForStyle(style) {
         switch (style) {
-            case 'h1': return 'bold 20px Segoe UI, sans-serif';
-            case 'h2': return 'bold 18px Segoe UI, sans-serif';
-            case 'h3': return 'bold 16px Segoe UI, sans-serif';
-            case 'h4': return 'bold 15px Segoe UI, sans-serif';
-            case 'h5': return 'bold 14px Segoe UI, sans-serif';
-            case 'h6': return 'bold 13px Segoe UI, sans-serif';
-            case 'bold': return 'bold 14px Segoe UI, sans-serif';
-            case 'italic': return 'italic 14px Segoe UI, sans-serif';
-            case 'list': return '14px Segoe UI, sans-serif';
-            default: return '14px Segoe UI, sans-serif';
+            case 'h1': return 'bold 22px Segoe UI, sans-serif';
+            case 'h2': return 'bold 20px Segoe UI, sans-serif';
+            case 'h3': return 'bold 18px Segoe UI, sans-serif';
+            case 'h4': return 'bold 17px Segoe UI, sans-serif';
+            case 'h5': return 'bold 16px Segoe UI, sans-serif';
+            case 'h6': return 'bold 15px Segoe UI, sans-serif';
+            case 'bold': return 'bold 16px Segoe UI, sans-serif';
+            case 'italic': return 'italic 16px Segoe UI, sans-serif';
+            case 'list': return '16px Segoe UI, sans-serif';
+            default: return '16px Segoe UI, sans-serif';
         }
     }
     
     getLineHeightForStyle(style) {
         switch (style) {
-            case 'h1': return 26;
-            case 'h2': return 24;
-            case 'h3': return 22;
-            case 'h4': return 20;
-            case 'h5': return 19;
-            case 'h6': return 18;
-            default: return 18;
+            case 'h1': return 31; // 22px * 1.4
+            case 'h2': return 28; // 20px * 1.4
+            case 'h3': return 25; // 18px * 1.4
+            case 'h4': return 24; // 17px * 1.4
+            case 'h5': return 22; // 16px * 1.4
+            case 'h6': return 21; // 15px * 1.4
+            default: return 22;   // 16px * 1.4
         }
     }
     
@@ -2815,7 +2816,7 @@ class CanvasRenderer {
         
         // File icon and name
         ctx.fillStyle = '#f0f0f0';
-        ctx.font = 'bold 14px Segoe UI, sans-serif';
+        ctx.font = 'bold 16px Segoe UI, sans-serif';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
         
@@ -2921,7 +2922,7 @@ class CanvasRenderer {
             ctx.fillRect(node.x, contentY, node.width, contentHeight);
             
             ctx.fillStyle = '#cccccc';
-            ctx.font = '14px Segoe UI, sans-serif';
+            ctx.font = '16px Segoe UI, sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText('Loading...', node.x + node.width / 2, contentY + contentHeight / 2);
@@ -2956,7 +2957,7 @@ class CanvasRenderer {
             ctx.fillRect(node.x, contentY, node.width, contentHeight);
             
             ctx.fillStyle = '#ff6b6b';
-            ctx.font = '14px Segoe UI, sans-serif';
+            ctx.font = '16px Segoe UI, sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText('⚠️ File not found', node.x + node.width / 2, contentY + contentHeight / 2);

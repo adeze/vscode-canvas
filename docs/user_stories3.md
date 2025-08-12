@@ -120,3 +120,7 @@ now when edit a node, i mean i make double click to write on it, the editoin mod
 
 
 the generate button is also not resizing well when zoom it and  out, i mean when i zoom out the size of the button is to big that cover half of the node, the button should appean always on top of the node , also when moving the node, the button should move along it
+
+
+
+now lets make the nodes more asthetic and minimalistics, i mean perhaps like round edges, 
