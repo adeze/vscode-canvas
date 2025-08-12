@@ -4262,10 +4262,14 @@ class UIManager {
             const baseButtonSize = 36;
             const baseButtonSpacing = 6;
             const baseFontSize = 18;
+            const minButtonSize = 18; // Minimum button size when zoomed out
+            const minFontSize = 12;   // Minimum font size when zoomed out
             const scale = this.canvas.canvasState.scale;
-            const buttonSize = baseButtonSize * scale;
+            
+            // Apply scaling with minimum sizes
+            const buttonSize = Math.max(minButtonSize, baseButtonSize * scale);
             const buttonSpacing = baseButtonSpacing * scale;
-            const fontSize = baseFontSize * scale;
+            const fontSize = Math.max(minFontSize, baseFontSize * scale);
             const totalWidth = (buttonSize * 2) + buttonSpacing;
             
             // Ensure buttons stay within viewport bounds
