@@ -173,7 +173,13 @@ export class InfiniteCanvas {
         };
         
         // Set up automatic render triggers
-        this.canvasState.onStateChange = () => this.requestRender();
+        this.canvasState.onStateChange = () => {
+            this.requestRender();
+            // Update floating button position during canvas transformations
+            if (this.uiManager) {
+                this.uiManager.updateFloatingButton();
+            }
+        };
         
         // Set up selection change callback for floating button updates
         this.canvasState.onSelectionChange = () => {
@@ -1100,6 +1106,9 @@ class InputHandler {
                 // Update floating button position after pan
                 this.canvasState.notifySelectionChange();
                 
+                // Update editor positions after pan
+                this.updateEditorPositions();
+                
                 // Request render for panning
                 if (this.requestRender) {
                     this.requestRender();
@@ -1254,6 +1263,9 @@ class InputHandler {
             // Update floating button position after pan
             this.canvasState.notifySelectionChange();
             
+            // Update editor positions after pan
+            this.updateEditorPositions();
+            
             // Request render for pan
             if (this.requestRender) {
                 this.requestRender();
@@ -1276,6 +1288,9 @@ class InputHandler {
             
             // Update floating button position after zoom
             this.canvasState.notifySelectionChange();
+            
+            // Update editor positions after zoom
+            this.updateEditorPositions();
             
             // Request render for zoom
             if (this.requestRender) {
@@ -1301,6 +1316,9 @@ class InputHandler {
         
         // Update floating button position after zoom
         this.canvasState.notifySelectionChange();
+        
+        // Update editor positions after zoom
+        this.updateEditorPositions();
         
         // Request render for zoom
         if (this.requestRender) {
@@ -1468,14 +1486,16 @@ class InputHandler {
         const canvasRect = this.canvas.getBoundingClientRect();
         
         // Calculate screen position accounting for canvas transform
-        const screenX = canvasRect.left + (node.x + this.canvasState.offsetX) * this.canvasState.scale;
-        const screenY = canvasRect.top + (node.y + this.canvasState.offsetY) * this.canvasState.scale;
+        const screenX = canvasRect.left + node.x * this.canvasState.scale + this.canvasState.offsetX;
+        const screenY = canvasRect.top + node.y * this.canvasState.scale + this.canvasState.offsetY;
         const screenWidth = node.width * this.canvasState.scale;
         const screenHeight = node.height * this.canvasState.scale;
         
         // Create textarea for multiline editing
         const textarea = document.createElement('textarea');
         textarea.value = node.text || '';
+        textarea.dataset.nodeId = node.id; // Add node ID for tracking
+        textarea.dataset.nodeEditor = 'true'; // Mark as node editor
         textarea.style.cssText = `
             position: absolute;
             left: ${screenX}px;
@@ -1580,18 +1600,27 @@ class InputHandler {
         // Set editing state
         fileNode.isEditing = true;
         
-        // Create editor container
+        // Create editor container with proper canvas coordinate transformation
+        const canvasRect = this.canvas.getBoundingClientRect();
+        
+        // Calculate screen position accounting for canvas transform
+        const screenX = canvasRect.left + (fileNode.x + 5) * this.canvasState.scale + this.canvasState.offsetX;
+        const screenY = canvasRect.top + (fileNode.y + 45) * this.canvasState.scale + this.canvasState.offsetY; // +45 for header
+        const screenWidth = (fileNode.width - 10) * this.canvasState.scale;
+        const screenHeight = (fileNode.height - 50) * this.canvasState.scale; // -50 for header + padding
+        
         const editorContainer = document.createElement('div');
         editorContainer.style.position = 'absolute';
-        editorContainer.style.left = (fileNode.x + 5) + 'px';
-        editorContainer.style.top = (fileNode.y + 45) + 'px';
-        editorContainer.style.width = (fileNode.width - 10) + 'px';
-        editorContainer.style.height = (fileNode.height - 50) + 'px';
+        editorContainer.style.left = screenX + 'px';
+        editorContainer.style.top = screenY + 'px';
+        editorContainer.style.width = screenWidth + 'px';
+        editorContainer.style.height = screenHeight + 'px';
         editorContainer.style.zIndex = '1000';
         editorContainer.style.backgroundColor = '#2d2d2d';
         editorContainer.style.border = '2px solid #007fd4';
         editorContainer.style.borderRadius = '4px';
         editorContainer.className = 'markdown-editor-container';
+        editorContainer.dataset.nodeId = fileNode.id; // Add node ID for tracking
         
         // No toolbar needed - keeping it simple
         
@@ -1779,6 +1808,7 @@ class InputHandler {
         editorContainer.style.border = '2px solid #007fd4';
         editorContainer.style.borderRadius = '4px';
         editorContainer.className = 'markdown-editor-container';
+        editorContainer.dataset.nodeId = fileNode.id; // Add node ID for tracking
         
         // Create simple textarea (no toolbar)
         const textarea = document.createElement('textarea');
@@ -1963,8 +1993,13 @@ class InputHandler {
         return filename;
     }
     
-    promptForFileImport(file, x, y) {
+    promptForFileImport(file, canvasX, canvasY) {
         console.log('📥 Prompting for file import:', file.name);
+        
+        // Transform canvas coordinates to screen coordinates  
+        const canvasRect = this.canvas.getBoundingClientRect();
+        const screenX = canvasRect.left + canvasX * this.canvasState.scale + this.canvasState.offsetX;
+        const screenY = canvasRect.top + canvasY * this.canvasState.scale + this.canvasState.offsetY;
         
         // Create a simple input overlay for the relative path
         const input = document.createElement('input');
@@ -1972,8 +2007,8 @@ class InputHandler {
         input.value = file.name;
         input.placeholder = 'Enter workspace-relative path (e.g., docs/myfile.md)';
         input.style.position = 'absolute';
-        input.style.left = x + 'px';
-        input.style.top = y + 'px';
+        input.style.left = screenX + 'px';
+        input.style.top = screenY + 'px';
         input.style.zIndex = '1000';
         input.style.backgroundColor = '#3c3c3c';
         input.style.color = '#cccccc';
@@ -2140,6 +2175,45 @@ class InputHandler {
         if (this.requestRender) {
             this.requestRender();
         }
+    }
+    
+    // Update editor positions when canvas state changes (zoom/pan)
+    updateEditorPositions() {
+        // Update any active text editors to match new canvas transformation
+        const editors = document.querySelectorAll('.markdown-editor-container, textarea[data-node-editor]');
+        editors.forEach(editor => {
+            const nodeId = editor.dataset.nodeId;
+            if (nodeId && this.canvasState) {
+                const node = this.canvasState.nodes.find(n => n.id === nodeId);
+                if (node) {
+                    const canvasRect = this.canvas.getBoundingClientRect();
+                    
+                    if (editor.classList.contains('markdown-editor-container')) {
+                        // File editor positioning
+                        const screenX = canvasRect.left + (node.x + 5) * this.canvasState.scale + this.canvasState.offsetX;
+                        const screenY = canvasRect.top + (node.y + 45) * this.canvasState.scale + this.canvasState.offsetY;
+                        const screenWidth = (node.width - 10) * this.canvasState.scale;
+                        const screenHeight = (node.height - 50) * this.canvasState.scale;
+                        
+                        editor.style.left = screenX + 'px';
+                        editor.style.top = screenY + 'px';
+                        editor.style.width = screenWidth + 'px';
+                        editor.style.height = screenHeight + 'px';
+                    } else {
+                        // Text editor positioning  
+                        const screenX = canvasRect.left + node.x * this.canvasState.scale + this.canvasState.offsetX;
+                        const screenY = canvasRect.top + node.y * this.canvasState.scale + this.canvasState.offsetY;
+                        const screenWidth = node.width * this.canvasState.scale;
+                        const screenHeight = node.height * this.canvasState.scale;
+                        
+                        editor.style.left = screenX + 'px';
+                        editor.style.top = screenY + 'px';
+                        editor.style.width = screenWidth + 'px';
+                        editor.style.height = screenHeight + 'px';
+                    }
+                }
+            }
+        });
     }
     
     // Open content modal for viewing node content in a readable format
@@ -4184,9 +4258,14 @@ class UIManager {
             const screenX = canvasRect.left + nodeCenterX * this.canvas.canvasState.scale + this.canvas.canvasState.offsetX;
             const screenY = canvasRect.top + nodeTopY * this.canvas.canvasState.scale + this.canvas.canvasState.offsetY;
             
-            // Button dimensions and spacing
-            const buttonSize = 36;
-            const buttonSpacing = 6;
+            // Button dimensions and spacing (scale with canvas zoom)
+            const baseButtonSize = 36;
+            const baseButtonSpacing = 6;
+            const baseFontSize = 18;
+            const scale = this.canvas.canvasState.scale;
+            const buttonSize = baseButtonSize * scale;
+            const buttonSpacing = baseButtonSpacing * scale;
+            const fontSize = baseFontSize * scale;
             const totalWidth = (buttonSize * 2) + buttonSpacing;
             
             // Ensure buttons stay within viewport bounds
@@ -4202,17 +4281,28 @@ class UIManager {
                 const generateX = clampedX - (buttonSize / 2) - (buttonSpacing / 2);
                 const viewX = clampedX + (buttonSize / 2) + (buttonSpacing / 2);
                 
+                // Update generate button position and size
                 this.floatingGenerateBtn.style.left = `${generateX - buttonSize / 2}px`;
                 this.floatingGenerateBtn.style.top = `${clampedY}px`;
+                this.floatingGenerateBtn.style.width = `${buttonSize}px`;
+                this.floatingGenerateBtn.style.height = `${buttonSize}px`;
+                this.floatingGenerateBtn.style.fontSize = `${fontSize}px`;
                 this.floatingGenerateBtn.style.display = 'flex';
                 
+                // Update view button position and size
                 this.floatingViewBtn.style.left = `${viewX - buttonSize / 2}px`;
                 this.floatingViewBtn.style.top = `${clampedY}px`;
+                this.floatingViewBtn.style.width = `${buttonSize}px`;
+                this.floatingViewBtn.style.height = `${buttonSize}px`;
+                this.floatingViewBtn.style.fontSize = `${fontSize}px`;
                 this.floatingViewBtn.style.display = 'flex';
             } else {
                 // Show only generate button (perfectly centered above node)
                 this.floatingGenerateBtn.style.left = `${clampedX - buttonSize / 2}px`;
                 this.floatingGenerateBtn.style.top = `${clampedY}px`;
+                this.floatingGenerateBtn.style.width = `${buttonSize}px`;
+                this.floatingGenerateBtn.style.height = `${buttonSize}px`;
+                this.floatingGenerateBtn.style.fontSize = `${fontSize}px`;
                 this.floatingGenerateBtn.style.display = 'flex';
                 
                 this.floatingViewBtn.style.display = 'none';

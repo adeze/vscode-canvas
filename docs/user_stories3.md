@@ -116,4 +116,7 @@ some times to node get selected and you move the mause and the node also get mov
 and click the generat button and try to move the node get fixed in my mouse, but this erros seems extrange, lets try to find the bug and replicate it , i mean happens occacionally  lets read the code and search for conflicting ui
 ---
 
-now when edit a node, i mean i make double click to write on it, the editoin mode get moved of position, i mean the editiong node position is on diferent position that the actual node 
+now when edit a node, i mean i make double click to write on it, the editoin mode get moved of position, i mean the editiong node position is on diferent position that the actual node , this happen when i zoom in and out.
+
+
+the generate button is also not resizing well when zoom it and  out, i mean when i zoom out the size of the button is to big that cover half of the node, the button should appean always on top of the node , also when moving the node, the button should move along it
