@@ -3852,23 +3852,25 @@ class UIManager {
             { category: 'Mouse Controls', items: [
                 { action: 'Double-click empty area', description: 'Create new node' },
                 { action: 'Double-click node', description: 'Edit node text' },
-                { action: 'Click + drag node', description: 'Move node' },
-                { action: 'Left-click + drag empty area', description: 'Selection rectangle' },
+                { action: 'Click + drag node', description: 'Move node (buttons follow automatically)' },
+                { action: 'Left-click + drag empty area', description: 'Rubber band selection rectangle' },
                 { action: 'Alt + drag OR Middle mouse drag', description: 'Pan canvas' },
-                { action: 'Mouse wheel', description: 'Zoom in/out' },
+                { action: 'Mouse wheel', description: 'Zoom in/out (buttons scale automatically)' },
                 { action: 'Mouse wheel on node', description: 'Scroll node content' }
             ]},
             { category: 'Trackpad Gestures', items: [
-                { action: 'Two-finger scroll', description: 'Pan canvas' },
+                { action: 'Two-finger scroll', description: 'Pan canvas (Mac-style trackpad support)' },
                 { action: 'Two-finger pinch', description: 'Zoom in/out' },
-                { action: 'Ctrl + scroll', description: 'Zoom in/out' }
+                { action: 'Ctrl + scroll', description: 'Zoom in/out' },
+                { action: 'Single finger drag', description: 'Selection rectangle (no panning conflict)' }
             ]},
             { category: 'Multi-Selection', items: [
-                { action: 'Ctrl/Cmd + click node', description: 'Toggle node selection' },
-                { action: 'Shift + click node', description: 'Add node to selection' },
-                { action: 'Drag in empty space', description: 'Select multiple nodes with rectangle' },
-                { action: 'Ctrl/Cmd + drag rectangle', description: 'Add nodes to selection' },
-                { action: 'Drag selected nodes', description: 'Move all selected nodes together' }
+                { action: 'Ctrl/Cmd + click node', description: 'Toggle individual node selection' },
+                { action: 'Shift + click node', description: 'Add node to current selection' },
+                { action: 'Drag in empty space', description: 'Rubber band rectangle selection' },
+                { action: 'Ctrl/Cmd + drag rectangle', description: 'Add nodes to existing selection' },
+                { action: 'Drag selected nodes', description: 'Move all selected nodes together' },
+                { action: 'Delete with multiple selected', description: 'Delete all selected nodes at once' }
             ]},
             { category: 'Connections', items: [
                 { action: 'Shift + click green circle', description: 'Start connection' },
@@ -3878,7 +3880,10 @@ class UIManager {
             { category: 'Node Editing', items: [
                 { action: 'Click resize handles', description: 'Resize selected node' },
                 { action: 'Drag + drop .md files', description: 'Create file nodes' },
-                { action: 'Double-click file node', description: 'Edit file content' }
+                { action: 'Double-click file node', description: 'Edit file content' },
+                { action: 'Select single node → ✦ button', description: 'Floating buttons appear (scale with zoom)' },
+                { action: 'Click ✦ generate button', description: 'Generate AI content from node' },
+                { action: 'Click 👁️ view button', description: 'View content in modal (large content only)' }
             ]},
             { category: 'Keyboard Shortcuts', items: [
                 { action: 'Delete/Backspace', description: 'Delete selected nodes/connections' },
