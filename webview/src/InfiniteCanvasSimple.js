@@ -756,6 +756,18 @@ class InputHandler {
             this.handleDoubleClick(e);
         });
         
+        // Add safeguard: reset drag state when canvas loses focus or mouse leaves
+        this.canvas.addEventListener('mouseleave', () => {
+            console.log('🖱️ Mouse left canvas, resetting drag state');
+            this.resetDragState();
+        });
+        
+        // Also reset on window blur (e.g., switching to another app)
+        window.addEventListener('blur', () => {
+            console.log('🪟 Window lost focus, resetting drag state');
+            this.resetDragState();
+        });
+        
         // Keyboard events
         document.addEventListener('keydown', (e) => {
             console.log('⌨️ Key down:', e.key);
@@ -1726,6 +1738,13 @@ class InputHandler {
         document.addEventListener('click', function closeEditor(e) {
             if (!editorContainer.contains(e.target)) {
                 document.removeEventListener('click', closeEditor);
+                
+                // Reset canvas drag state to prevent sticky drag
+                const canvas = document.querySelector('canvas');
+                if (canvas && canvas.inputHandler && canvas.inputHandler.resetDragState) {
+                    canvas.inputHandler.resetDragState();
+                }
+                
                 finishEditing();
             }
         });
@@ -1827,6 +1846,13 @@ class InputHandler {
         document.addEventListener('click', function closeEditor(e) {
             if (!editorContainer.contains(e.target)) {
                 document.removeEventListener('click', closeEditor);
+                
+                // Reset canvas drag state to prevent sticky drag
+                const canvas = document.querySelector('canvas');
+                if (canvas && canvas.inputHandler && canvas.inputHandler.resetDragState) {
+                    canvas.inputHandler.resetDragState();
+                }
+                
                 finishEditing();
             }
         });
@@ -2086,6 +2112,34 @@ class InputHandler {
     setRenderCallback(callback) {
         this.requestRender = callback;
         console.log('🎨 Render callback set for InputHandler');
+    }
+    
+    // Reset drag state to prevent sticky dragging after UI interactions
+    resetDragState() {
+        console.log('🔄 Resetting drag state to prevent sticky drag');
+        this.isDragging = false;
+        this.isNodeDragging = false;
+        this.isPanning = false;
+        this.isSelecting = false;
+        this.isConnecting = false;
+        this.isResizing = false;
+        this.isDraggingScrollbar = false;
+        this.draggedNode = null;
+        this.selectionRect = null;
+        this.hasMoved = false;
+        this.connectionStart = null;
+        this.connectionStartPoint = null;
+        this.resizeNode = null;
+        this.resizeHandle = null;
+        this.scrollbarDragNode = null;
+        
+        // Update cursor
+        this.canvas.style.cursor = 'default';
+        
+        // Request render to update visual state
+        if (this.requestRender) {
+            this.requestRender();
+        }
     }
     
     // Open content modal for viewing node content in a readable format
@@ -3276,12 +3330,30 @@ class UIManager {
             generateBtn.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1)';
         });
         
-        generateBtn.addEventListener('click', () => {
+        generateBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Reset any ongoing drag operations to prevent sticky drag
+            this.canvas.inputHandler.resetDragState();
+            
             if (this.canvas.aiManager) {
                 this.canvas.aiManager.generateAI();
             } else {
                 this.showNotification('AI functionality not available', 'error');
             }
+        });
+        
+        // Prevent mouse events on the button from interfering with canvas
+        generateBtn.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.canvas.inputHandler.resetDragState();
+        });
+        
+        generateBtn.addEventListener('mouseup', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
         });
         
         document.body.appendChild(generateBtn);
@@ -3338,11 +3410,26 @@ class UIManager {
             e.preventDefault();
             e.stopPropagation();
             
+            // Reset any ongoing drag operations to prevent sticky drag
+            this.canvas.inputHandler.resetDragState();
+            
             const selectedNodes = this.canvas.canvasState.selectedNodes;
             if (selectedNodes.length === 1) {
                 console.log('👁️ Floating view button clicked for node:', selectedNodes[0]);
                 this.canvas.inputHandler.openContentModal(selectedNodes[0]);
             }
+        });
+        
+        // Prevent mouse events on the button from interfering with canvas
+        viewBtn.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.canvas.inputHandler.resetDragState();
+        });
+        
+        viewBtn.addEventListener('mouseup', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
         });
         
         document.body.appendChild(viewBtn);
