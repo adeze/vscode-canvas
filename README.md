@@ -40,6 +40,11 @@
 - **File editing**: Double-click `.md` file nodes to edit content directly
 - **Auto-save**: Changes save automatically to your workspace files
 
+
+### 🌐 Web Version - HumOS Canvas
+This VS Code extension is the desktop version of the [HumOS Canvas](https://github.com/lout33/humos_canvas) project, a powerful, open-source, AI-powered infinite canvas for mind mapping and brainstorming that runs in your browser.
+
+**[Try the live demo here!](https://humos-canvas.vercel.app/)**
 ## Quick Start
 
 1. **Install** the extension from the VS Code marketplace
