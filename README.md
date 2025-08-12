@@ -9,7 +9,7 @@
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![GitHub Stars](https://img.shields.io/github/stars/lout33/infinite_canvas_vscode?style=social)](https://github.com/lout33/infinite_canvas_vscode)
 
-![Infinite Canvas Demo](image_reference.png)
+![Infinite Canvas Demo](gif_reference.gif)
 
 ---
 
