@@ -1506,7 +1506,7 @@ class InputHandler {
             background-color: var(--vscode-input-background, #3c3c3c);
             color: var(--vscode-input-foreground, #cccccc);
             border: 2px solid var(--vscode-focusBorder, #007fd4);
-            border-radius: 8px;
+            border-radius: 12px;
             padding: 8px;
             font-size: 16px;
             font-family: var(--vscode-font-family, 'Segoe UI');
@@ -2457,6 +2457,21 @@ class CanvasRenderer {
         ctx.stroke();
     }
     
+    // Helper function to draw rounded rectangles
+    drawRoundedRect(ctx, x, y, width, height, radius = 8) {
+        ctx.beginPath();
+        ctx.moveTo(x + radius, y);
+        ctx.lineTo(x + width - radius, y);
+        ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+        ctx.lineTo(x + width, y + height - radius);
+        ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+        ctx.lineTo(x + radius, y + height);
+        ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+        ctx.lineTo(x, y + radius);
+        ctx.quadraticCurveTo(x, y, x + radius, y);
+        ctx.closePath();
+    }
+
     drawNode(ctx, node, showConnectionPoints = false, inputHandler = null) {
         // Skip rendering if node is being edited (text editor overlay is shown)
         if (node.isEditing && node.type !== 'file') {
@@ -2468,24 +2483,25 @@ class CanvasRenderer {
             node.scrollY = 0;
         }
         
-        // Draw background
+        // Draw background with rounded corners
         ctx.fillStyle = node.backgroundColor;
-        ctx.fillRect(node.x, node.y, node.width, node.height);
+        this.drawRoundedRect(ctx, node.x, node.y, node.width, node.height, 12);
+        ctx.fill();
         
-        // Draw border
+        // Draw border with rounded corners
         ctx.strokeStyle = node.isSelected ? '#007fd4' : node.borderColor;
         ctx.lineWidth = node.isSelected ? 2 : 1;
-        ctx.strokeRect(node.x, node.y, node.width, node.height);
+        this.drawRoundedRect(ctx, node.x, node.y, node.width, node.height, 12);
+        ctx.stroke();
         
         // Draw AI model badge if node was created by AI
         if (node.aiModel) {
             this.drawAIModelBadge(ctx, node);
         }
         
-        // Set up clipping region for text content
+        // Set up clipping region for text content with rounded corners
         ctx.save();
-        ctx.beginPath();
-        ctx.rect(node.x + 2, node.y + 2, node.width - 4, node.height - 4);
+        this.drawRoundedRect(ctx, node.x + 2, node.y + 2, node.width - 4, node.height - 4, 10);
         ctx.clip();
         
         // Draw text with scrolling
@@ -2703,14 +2719,16 @@ class CanvasRenderer {
         const badgeX = node.x + node.width - badgeWidth - 8;
         const badgeY = node.y - badgeHeight - 4;
         
-        // Draw badge background with rounded corners effect
+        // Draw badge background with rounded corners
         ctx.fillStyle = 'rgba(79, 195, 247, 0.9)'; // Light blue with transparency
-        ctx.fillRect(badgeX, badgeY, badgeWidth, badgeHeight);
+        this.drawRoundedRect(ctx, badgeX, badgeY, badgeWidth, badgeHeight, 6);
+        ctx.fill();
         
-        // Draw badge border
+        // Draw badge border with rounded corners
         ctx.strokeStyle = '#29b6f6';
         ctx.lineWidth = 1;
-        ctx.strokeRect(badgeX, badgeY, badgeWidth, badgeHeight);
+        this.drawRoundedRect(ctx, badgeX, badgeY, badgeWidth, badgeHeight, 6);
+        ctx.stroke();
         
         // Draw badge text
         ctx.fillStyle = '#ffffff';
@@ -2795,19 +2813,30 @@ class CanvasRenderer {
     }
     
     drawFileNode(ctx, node, showConnectionPoints = false, inputHandler = null) {
-        // Draw file node background
+        // Draw file node background with rounded corners
         ctx.fillStyle = node.backgroundColor;
-        ctx.fillRect(node.x, node.y, node.width, node.height);
+        this.drawRoundedRect(ctx, node.x, node.y, node.width, node.height, 12);
+        ctx.fill();
         
-        // Draw border with file-specific styling
+        // Draw border with file-specific styling and rounded corners
         ctx.strokeStyle = node.isSelected ? '#007fd4' : node.borderColor;
         ctx.lineWidth = node.isSelected ? 3 : 2;
-        ctx.strokeRect(node.x, node.y, node.width, node.height);
+        this.drawRoundedRect(ctx, node.x, node.y, node.width, node.height, 12);
+        ctx.stroke();
         
-        // Draw file header with filename
+        // Draw file header with filename (rounded top corners only)
         const headerHeight = 40;
         ctx.fillStyle = '#1e1e1e';
-        ctx.fillRect(node.x, node.y, node.width, headerHeight);
+        ctx.beginPath();
+        ctx.moveTo(node.x + 12, node.y);
+        ctx.lineTo(node.x + node.width - 12, node.y);
+        ctx.quadraticCurveTo(node.x + node.width, node.y, node.x + node.width, node.y + 12);
+        ctx.lineTo(node.x + node.width, node.y + headerHeight);
+        ctx.lineTo(node.x, node.y + headerHeight);
+        ctx.lineTo(node.x, node.y + 12);
+        ctx.quadraticCurveTo(node.x, node.y, node.x + 12, node.y);
+        ctx.closePath();
+        ctx.fill();
         
         // Draw AI model badge if node was created by AI
         if (node.aiModel) {
@@ -2831,14 +2860,16 @@ class CanvasRenderer {
         const viewButtonWidth = 50;
         const viewButtonHeight = 24;
         
-        // View button background
+        // View button background with rounded corners
         ctx.fillStyle = '#2563eb';
-        ctx.fillRect(viewButtonX, viewButtonY, viewButtonWidth, viewButtonHeight);
+        this.drawRoundedRect(ctx, viewButtonX, viewButtonY, viewButtonWidth, viewButtonHeight, 4);
+        ctx.fill();
         
-        // View button border
+        // View button border with rounded corners
         ctx.strokeStyle = '#3b82f6';
         ctx.lineWidth = 1;
-        ctx.strokeRect(viewButtonX, viewButtonY, viewButtonWidth, viewButtonHeight);
+        this.drawRoundedRect(ctx, viewButtonX, viewButtonY, viewButtonWidth, viewButtonHeight, 4);
+        ctx.stroke();
         
         // View button text
         ctx.fillStyle = '#ffffff';
@@ -2860,14 +2891,16 @@ class CanvasRenderer {
         const editButtonWidth = 50;
         const editButtonHeight = 24;
         
-        // Edit button background
+        // Edit button background with rounded corners
         ctx.fillStyle = node.isEditing ? '#0e7490' : '#4a4a4a';
-        ctx.fillRect(editButtonX, editButtonY, editButtonWidth, editButtonHeight);
+        this.drawRoundedRect(ctx, editButtonX, editButtonY, editButtonWidth, editButtonHeight, 4);
+        ctx.fill();
         
-        // Edit button border
+        // Edit button border with rounded corners
         ctx.strokeStyle = node.isEditing ? '#0891b2' : '#666';
         ctx.lineWidth = 1;
-        ctx.strokeRect(editButtonX, editButtonY, editButtonWidth, editButtonHeight);
+        this.drawRoundedRect(ctx, editButtonX, editButtonY, editButtonWidth, editButtonHeight, 4);
+        ctx.stroke();
         
         // Edit button text
         ctx.fillStyle = '#ffffff';
