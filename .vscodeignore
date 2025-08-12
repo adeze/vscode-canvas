@@ -22,3 +22,4 @@ unified-config-test.canvas
 *.log
 .DS_Store
 **/.DS_Store
+gif_reference.gif
