@@ -95,3 +95,15 @@ now lets the messages that appear for seconds on the left top lets move it to th
 
 
 now for some reason the grow node is not working well, the rigth grow and the bottom grow works well but the left and top instead of growing the node, they move the node , find the bug and fix that
+
+---
+some times to node get selected and you move the mause and the vscode also get moving
+
+add solect varios nodes att the same time, perhaps we could use shif or control or comand to select varios nodes at the same time, the idea of this is to move the nodes or remove them easily, give me the best and easy solution.
+i mean like a clasic canvas features of varios nodes selection
+
+remember i coould clik on anywhre on the canvas, even in empty space and from there drag the group selection 
+
+now the bug is selecting and moving around the canvas, both work wihtout pressing any  │
+│   button, so to fix this lets now make the ability to move around the canvas, pressing   │
+│   the 2 finger on the trackboad i mean like a clasic implementation of canvas on mac  

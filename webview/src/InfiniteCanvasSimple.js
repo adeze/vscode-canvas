@@ -416,6 +416,52 @@ class CanvasState {
         }
     }
     
+    // Multi-selection methods
+    addToSelection(node) {
+        if (!node.isSelected) {
+            node.isSelected = true;
+            this.selectedNodes.push(node);
+            this.notifySelectionChange();
+        }
+    }
+    
+    removeFromSelection(node) {
+        if (node.isSelected) {
+            node.isSelected = false;
+            this.selectedNodes = this.selectedNodes.filter(n => n !== node);
+            this.notifySelectionChange();
+        }
+    }
+    
+    toggleSelection(node) {
+        if (node.isSelected) {
+            this.removeFromSelection(node);
+        } else {
+            this.addToSelection(node);
+        }
+    }
+    
+    selectMultipleNodes(nodes) {
+        // Clear previous selection
+        this.clearSelection();
+        // Add all nodes to selection
+        nodes.forEach(node => {
+            node.isSelected = true;
+            this.selectedNodes.push(node);
+        });
+        this.notifySelectionChange();
+    }
+    
+    getNodesInRect(x, y, width, height) {
+        return this.nodes.filter(node => {
+            // Check if node intersects with rectangle
+            return !(node.x > x + width || 
+                     node.x + node.width < x || 
+                     node.y > y + height || 
+                     node.y + node.height < y);
+        });
+    }
+    
     getNodeAt(x, y) {
         // Check nodes in reverse order (top to bottom)
         for (let i = this.nodes.length - 1; i >= 0; i--) {
@@ -634,6 +680,16 @@ class InputHandler {
         this.hoveredNode = null;
         this.hoveredConnectionPoint = null;
         
+        // Selection rectangle (rubber band) functionality
+        this.isSelecting = false;
+        this.selectionStart = { x: 0, y: 0 };
+        this.selectionEnd = { x: 0, y: 0 };
+        this.selectionRect = null;
+        
+        // Track input method for proper panning vs selection
+        this.isTrackpadPanning = false;
+        this.panStartTime = 0;
+        
         this.setupEventListeners();
     }
     
@@ -673,6 +729,26 @@ class InputHandler {
             if (this.requestRender) {
                 this.requestRender();
             }
+        });
+        
+        // Add trackpad gesture support
+        this.canvas.addEventListener('gesturestart', (e) => {
+            e.preventDefault();
+            console.log('👋 Gesture start');
+        });
+        
+        this.canvas.addEventListener('gesturechange', (e) => {
+            e.preventDefault();
+            console.log('👋 Gesture change:', e.scale);
+            // Handle pinch zoom on trackpad
+            if (e.scale !== 1) {
+                this.handlePinchZoom(e);
+            }
+        });
+        
+        this.canvas.addEventListener('gestureend', (e) => {
+            e.preventDefault();
+            console.log('👋 Gesture end');
         });
         
         this.canvas.addEventListener('dblclick', (e) => {
@@ -788,18 +864,53 @@ class InputHandler {
             }
             
             
-            // Normal node interaction
-            this.canvasState.selectNode(clickedNode);
-            console.log('✅ Node selected:', clickedNode.id, 'Total selected:', this.canvasState.selectedNodes.length);
-            this.isNodeDragging = true;
-            this.draggedNode = clickedNode;
-            this.dragStartX = canvasX - clickedNode.x;
-            this.dragStartY = canvasY - clickedNode.y;
+            // Normal node interaction - handle multi-selection
+            if (e.ctrlKey || e.metaKey) {
+                // Ctrl/Cmd + click: toggle selection
+                this.canvasState.toggleSelection(clickedNode);
+                console.log('🔄 Node selection toggled:', clickedNode.id, 'Total selected:', this.canvasState.selectedNodes.length);
+            } else if (e.shiftKey && this.canvasState.selectedNodes.length > 0) {
+                // Shift + click: add to selection
+                this.canvasState.addToSelection(clickedNode);
+                console.log('➕ Node added to selection:', clickedNode.id, 'Total selected:', this.canvasState.selectedNodes.length);
+            } else {
+                // Normal click: single selection
+                this.canvasState.selectNode(clickedNode);
+                console.log('✅ Node selected:', clickedNode.id, 'Total selected:', this.canvasState.selectedNodes.length);
+            }
+            
+            // Only start dragging if the node is selected
+            if (clickedNode.isSelected) {
+                this.isNodeDragging = true;
+                this.draggedNode = clickedNode;
+                this.dragStartX = canvasX - clickedNode.x;
+                this.dragStartY = canvasY - clickedNode.y;
+            }
         } else {
-            // Start panning
-            this.canvasState.clearSelection();
-            console.log('🧹 Selection cleared');
-            this.isPanning = true;
+            // Clicking on empty space - determine action based on input method
+            
+            // Middle mouse button or Alt/Option key for panning
+            if (e.button === 1 || e.altKey) {
+                console.log('🤚 Starting pan mode (middle mouse or Alt key)');
+                this.isPanning = true;
+                if (!e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) {
+                    this.canvasState.clearSelection();
+                    console.log('🧹 Selection cleared');
+                }
+            } else {
+                // Left mouse button - start selection rectangle
+                if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
+                    this.canvasState.clearSelection();
+                    console.log('🧹 Selection cleared');
+                }
+                
+                this.isSelecting = true;
+                this.selectionStart.x = canvasX;
+                this.selectionStart.y = canvasY;
+                this.selectionEnd.x = canvasX;
+                this.selectionEnd.y = canvasY;
+                console.log('📦 Starting selection rectangle at:', canvasX, canvasY);
+            }
         }
         
         this.lastMouseX = mouseX;
@@ -943,10 +1054,30 @@ class InputHandler {
                 this.hasMoved = true;
             }
             
-            if (this.isNodeDragging && this.draggedNode) {
-                // Move node
-                this.draggedNode.x = canvasX - this.dragStartX;
-                this.draggedNode.y = canvasY - this.dragStartY;
+            if (this.isSelecting) {
+                // Update selection rectangle
+                this.selectionEnd.x = canvasX;
+                this.selectionEnd.y = canvasY;
+                
+                // Calculate selection rectangle bounds
+                const minX = Math.min(this.selectionStart.x, this.selectionEnd.x);
+                const minY = Math.min(this.selectionStart.y, this.selectionEnd.y);
+                const width = Math.abs(this.selectionEnd.x - this.selectionStart.x);
+                const height = Math.abs(this.selectionEnd.y - this.selectionStart.y);
+                
+                // Update selection rectangle for rendering
+                this.selectionRect = { x: minX, y: minY, width, height };
+                
+            } else if (this.isNodeDragging && this.draggedNode) {
+                // Move selected nodes as a group
+                const deltaX = (canvasX - this.dragStartX) - this.draggedNode.x;
+                const deltaY = (canvasY - this.dragStartY) - this.draggedNode.y;
+                
+                // Move all selected nodes
+                this.canvasState.selectedNodes.forEach(node => {
+                    node.x += deltaX;
+                    node.y += deltaY;
+                });
                 
                 this.canvasState.notifyStateChange();
             } else if (this.isPanning) {
@@ -1025,6 +1156,38 @@ class InputHandler {
             this.canvas.style.cursor = 'default';
         }
         
+        // Handle selection rectangle completion
+        if (this.isSelecting) {
+            console.log('📦 Completing selection rectangle');
+            
+            if (this.selectionRect && (this.selectionRect.width > 5 || this.selectionRect.height > 5)) {
+                // Get nodes in selection rectangle
+                const selectedNodes = this.canvasState.getNodesInRect(
+                    this.selectionRect.x, 
+                    this.selectionRect.y, 
+                    this.selectionRect.width, 
+                    this.selectionRect.height
+                );
+                
+                if (e.ctrlKey || e.metaKey) {
+                    // Add to existing selection
+                    selectedNodes.forEach(node => this.canvasState.addToSelection(node));
+                } else if (e.shiftKey) {
+                    // Add to existing selection
+                    selectedNodes.forEach(node => this.canvasState.addToSelection(node));
+                } else {
+                    // Replace selection
+                    this.canvasState.selectMultipleNodes(selectedNodes);
+                }
+                
+                console.log('📦 Selected', selectedNodes.length, 'nodes with rectangle');
+            }
+            
+            // Reset selection rectangle
+            this.isSelecting = false;
+            this.selectionRect = null;
+        }
+        
         // If we weren't really dragging (just a click), ensure selection is maintained
         if (this.draggedNode && !this.hasMoved) {
             console.log('👆 Simple click on node, ensuring selection');
@@ -1052,8 +1215,8 @@ class InputHandler {
         // Check if mouse is over a node with scrollable content
         const hoveredNode = this.canvasState.getNodeAt(canvasX, canvasY);
         
-        if (hoveredNode && hoveredNode._maxScroll > 0) {
-            // Scroll the node content
+        if (hoveredNode && hoveredNode._maxScroll > 0 && !e.ctrlKey && !e.metaKey && Math.abs(e.deltaX) < Math.abs(e.deltaY)) {
+            // Scroll the node content (only when not holding Ctrl/Cmd and vertical scroll is dominant)
             const scrollDelta = e.deltaY * 0.5; // Adjust scroll sensitivity
             hoveredNode.scrollY = Math.max(0, Math.min(hoveredNode.scrollY + scrollDelta, hoveredNode._maxScroll));
             console.log('📜 Scrolling node:', hoveredNode.id, 'scrollY:', hoveredNode.scrollY, 'maxScroll:', hoveredNode._maxScroll);
@@ -1065,15 +1228,63 @@ class InputHandler {
             return; // Don't zoom when scrolling node content
         }
         
-        // Default canvas zoom behavior
-        const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-        const newScale = Math.max(0.1, Math.min(5, this.canvasState.scale * zoomFactor));
+        // Detect trackpad two-finger pan (both deltaX and deltaY present with small values)
+        const isTrackpadPan = Math.abs(e.deltaX) > 0 && Math.abs(e.deltaY) > 0 && 
+                             Math.abs(e.deltaX) < 50 && Math.abs(e.deltaY) < 50 &&
+                             !e.ctrlKey && !e.metaKey;
         
-        // Zoom towards mouse position
+        if (isTrackpadPan) {
+            // Two-finger trackpad pan
+            console.log('👋 Trackpad pan detected:', { deltaX: e.deltaX, deltaY: e.deltaY });
+            this.canvasState.offsetX -= e.deltaX;
+            this.canvasState.offsetY -= e.deltaY;
+            
+            // Update floating button position after pan
+            this.canvasState.notifySelectionChange();
+            
+            // Request render for pan
+            if (this.requestRender) {
+                this.requestRender();
+            }
+            return;
+        }
+        
+        // Handle zoom (Ctrl/Cmd + wheel or pure vertical scroll with larger delta)
+        if (e.ctrlKey || e.metaKey || (Math.abs(e.deltaX) < Math.abs(e.deltaY) && Math.abs(e.deltaY) > 20)) {
+            const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+            const newScale = Math.max(0.1, Math.min(5, this.canvasState.scale * zoomFactor));
+            
+            // Zoom towards mouse position
+            const scaleDiff = newScale - this.canvasState.scale;
+            this.canvasState.offsetX -= (mouseX - this.canvasState.offsetX) * scaleDiff / this.canvasState.scale;
+            this.canvasState.offsetY -= (mouseY - this.canvasState.offsetY) * scaleDiff / this.canvasState.scale;
+            
+            this.canvasState.scale = newScale;
+            console.log('🔍 Zoom to:', newScale);
+            
+            // Update floating button position after zoom
+            this.canvasState.notifySelectionChange();
+            
+            // Request render for zoom
+            if (this.requestRender) {
+                this.requestRender();
+            }
+        }
+    }
+    
+    handlePinchZoom(e) {
+        console.log('🤏 Pinch zoom:', e.scale);
+        
+        const rect = this.canvas.getBoundingClientRect();
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+        
+        // Apply zoom towards center of gesture
+        const newScale = Math.max(0.1, Math.min(5, this.canvasState.scale * e.scale));
         const scaleDiff = newScale - this.canvasState.scale;
-        this.canvasState.offsetX -= (mouseX - this.canvasState.offsetX) * scaleDiff / this.canvasState.scale;
-        this.canvasState.offsetY -= (mouseY - this.canvasState.offsetY) * scaleDiff / this.canvasState.scale;
         
+        this.canvasState.offsetX -= (centerX - this.canvasState.offsetX) * scaleDiff / this.canvasState.scale;
+        this.canvasState.offsetY -= (centerY - this.canvasState.offsetY) * scaleDiff / this.canvasState.scale;
         this.canvasState.scale = newScale;
         
         // Update floating button position after zoom
@@ -1084,7 +1295,7 @@ class InputHandler {
             this.requestRender();
         }
     }
-    
+
     handleDoubleClick(e) {
         console.log('🎯 Double click handler called!');
         
@@ -2082,6 +2293,11 @@ class CanvasRenderer {
             );
         }
         
+        // Draw selection rectangle if selecting
+        if (inputHandler.isSelecting && inputHandler.selectionRect) {
+            this.drawSelectionRectangle(ctx, inputHandler.selectionRect);
+        }
+        
         // Restore context
         ctx.restore();
     }
@@ -2963,6 +3179,29 @@ class CanvasRenderer {
         ctx.setLineDash([]); // Reset dash
     }
     
+    drawSelectionRectangle(ctx, selectionRect) {
+        if (!selectionRect) return;
+        
+        // Draw selection rectangle with dotted border and semi-transparent fill
+        ctx.save();
+        
+        // Fill with semi-transparent blue
+        ctx.fillStyle = 'rgba(59, 130, 246, 0.1)';
+        ctx.fillRect(selectionRect.x, selectionRect.y, selectionRect.width, selectionRect.height);
+        
+        // Draw dotted border
+        ctx.strokeStyle = '#3b82f6';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 3]);
+        
+        ctx.beginPath();
+        ctx.rect(selectionRect.x, selectionRect.y, selectionRect.width, selectionRect.height);
+        ctx.stroke();
+        
+        ctx.setLineDash([]); // Reset dash
+        ctx.restore();
+    }
+    
     getConnectionPoints(node) {
         const { x, y, width, height } = node;
         return [
@@ -3453,9 +3692,22 @@ class UIManager {
                 { action: 'Double-click empty area', description: 'Create new node' },
                 { action: 'Double-click node', description: 'Edit node text' },
                 { action: 'Click + drag node', description: 'Move node' },
-                { action: 'Click + drag empty area', description: 'Pan canvas' },
+                { action: 'Left-click + drag empty area', description: 'Selection rectangle' },
+                { action: 'Alt + drag OR Middle mouse drag', description: 'Pan canvas' },
                 { action: 'Mouse wheel', description: 'Zoom in/out' },
                 { action: 'Mouse wheel on node', description: 'Scroll node content' }
+            ]},
+            { category: 'Trackpad Gestures', items: [
+                { action: 'Two-finger scroll', description: 'Pan canvas' },
+                { action: 'Two-finger pinch', description: 'Zoom in/out' },
+                { action: 'Ctrl + scroll', description: 'Zoom in/out' }
+            ]},
+            { category: 'Multi-Selection', items: [
+                { action: 'Ctrl/Cmd + click node', description: 'Toggle node selection' },
+                { action: 'Shift + click node', description: 'Add node to selection' },
+                { action: 'Drag in empty space', description: 'Select multiple nodes with rectangle' },
+                { action: 'Ctrl/Cmd + drag rectangle', description: 'Add nodes to selection' },
+                { action: 'Drag selected nodes', description: 'Move all selected nodes together' }
             ]},
             { category: 'Connections', items: [
                 { action: 'Shift + click green circle', description: 'Start connection' },
