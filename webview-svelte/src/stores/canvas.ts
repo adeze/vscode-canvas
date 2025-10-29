@@ -28,16 +28,21 @@ export const selectedNodes = writable<string[]>([]);
 let saveTimeout: number | undefined;
 let currentNodes: Node[] = [];
 let currentEdges: Edge[] = [];
+let isLoading = false; // Flag to prevent save during initial load
 
 // Subscribe to changes
 nodes.subscribe(n => {
   currentNodes = n;
-  scheduleSave();
+  if (!isLoading) {
+    scheduleSave();
+  }
 });
 
 edges.subscribe(e => {
   currentEdges = e;
-  scheduleSave();
+  if (!isLoading) {
+    scheduleSave();
+  }
 });
 
 function scheduleSave() {
@@ -70,6 +75,8 @@ export function saveToExtension() {
  */
 export function loadFromObsidian(content: string) {
   try {
+    isLoading = true; // Prevent auto-save during load
+
     const obsidianData: ObsidianCanvas = JSON.parse(content);
     const { nodes: loadedNodes, edges: loadedEdges } = obsidianToSvelteFlow(obsidianData);
 
@@ -77,8 +84,14 @@ export function loadFromObsidian(content: string) {
     edges.set(loadedEdges);
 
     console.log('📂 Loaded canvas:', loadedNodes.length, 'nodes,', loadedEdges.length, 'edges');
+
+    // Re-enable auto-save after a brief delay
+    setTimeout(() => {
+      isLoading = false;
+    }, 100);
   } catch (error) {
     console.error('Failed to load canvas:', error);
+    isLoading = false;
   }
 }
 
@@ -203,9 +216,11 @@ export async function saveFileContent(nodeId: string, filePath: string, content:
 // Listen for messages from extension
 window.addEventListener('message', (event) => {
   const message = event.data;
+  console.log('📨 Webview received message:', message.type, message);
 
   switch (message.type) {
     case 'loadContent':
+      console.log('📂 Loading content...');
       loadFromObsidian(message.content);
       break;
     case 'groqApiKey':
@@ -222,4 +237,5 @@ window.addEventListener('message', (event) => {
 });
 
 // Notify extension that webview is ready
+console.log('🚀 Webview ready, sending ready message...');
 vscode.postMessage({ type: 'ready' });
