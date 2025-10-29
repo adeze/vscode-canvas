@@ -63,9 +63,7 @@ class CanvasEditorProvider implements vscode.CustomTextEditorProvider {
         webviewPanel.webview.options = {
             enableScripts: true,
             localResourceRoots: [
-                vscode.Uri.joinPath(this.extensionUri, 'webview'),
-                vscode.Uri.joinPath(this.extensionUri, 'webview', 'src'),
-                vscode.Uri.joinPath(this.extensionUri, 'webview', 'public')
+                vscode.Uri.joinPath(this.extensionUri, 'webview-dist')
             ]
         };
 
@@ -301,11 +299,11 @@ class CanvasEditorProvider implements vscode.CustomTextEditorProvider {
     }
 
     private getHtmlForWebview(webview: vscode.Webview): string {
-        // Get URIs for webview resources
-        const webviewUri = vscode.Uri.joinPath(this.extensionUri, 'webview');
-        const mainScriptUri = webview.asWebviewUri(vscode.Uri.joinPath(webviewUri, 'main.js'));
-        const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(webviewUri, 'style.css'));
-        
+        // Get URIs for Svelte bundle
+        const webviewDistUri = vscode.Uri.joinPath(this.extensionUri, 'webview-dist');
+        const bundleJsUri = webview.asWebviewUri(vscode.Uri.joinPath(webviewDistUri, 'bundle.js'));
+        const bundleCssUri = webview.asWebviewUri(vscode.Uri.joinPath(webviewDistUri, 'bundle.css'));
+
         // Get nonce for security
         const nonce = this.getNonce();
 
@@ -314,69 +312,29 @@ class CanvasEditorProvider implements vscode.CustomTextEditorProvider {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}' 'unsafe-inline'; connect-src https:; img-src ${webview.cspSource} https: data:;">
-    <link href="${styleUri}" rel="stylesheet">
-    <title>Infinite Canvas</title>
-    
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}'; connect-src https:; img-src ${webview.cspSource} https: data:;">
+    <link href="${bundleCssUri}" rel="stylesheet">
+    <title>Infinite Canvas (SvelteFlow)</title>
     <style>
-        body {
+        * {
             margin: 0;
             padding: 0;
-            height: 100vh;
-            overflow: hidden;
-            background: #1e1e1e;
+            box-sizing: border-box;
         }
-        
-        #canvas-container {
+        html, body {
             width: 100%;
             height: 100%;
-            position: relative;
+            overflow: hidden;
         }
-        
-        canvas {
-            display: block;
-            cursor: grab;
-            background: #1e1e1e;
-        }
-        
-        canvas:active {
-            cursor: grabbing;
+        #app {
+            width: 100%;
+            height: 100%;
         }
     </style>
 </head>
 <body>
-    <div id="canvas-container">
-        <canvas id="canvas"></canvas>
-    </div>
-    
-    <script nonce="${nonce}">
-        // VS Code API bridge
-        const vscode = acquireVsCodeApi();
-        
-        // Global state for VS Code integration
-        window.vsCodeAPI = {
-            postMessage: (message) => vscode.postMessage(message),
-            setState: (state) => vscode.setState(state),
-            getState: () => vscode.getState()
-        };
-        
-        // Listen for messages from extension
-        window.addEventListener('message', event => {
-            const message = event.data;
-            switch (message.type) {
-                case 'loadContent':
-                    if (window.loadCanvasContent) {
-                        window.loadCanvasContent(message.content);
-                    }
-                    break;
-            }
-        });
-        
-        // Signal that webview is ready
-        vscode.postMessage({ type: 'ready' });
-    </script>
-    
-    <script nonce="${nonce}" type="module" src="${mainScriptUri}"></script>
+    <div id="app"></div>
+    <script nonce="${nonce}" type="module" src="${bundleJsUri}"></script>
 </body>
 </html>`;
     }

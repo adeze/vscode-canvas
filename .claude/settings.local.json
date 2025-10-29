@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm run build:webview:*)",
+      "Bash(npx vite build)",
+      "Bash(./node_modules/.bin/vite build:*)",
+      "Bash(cat:*)",
+      "Bash(npm run compile:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

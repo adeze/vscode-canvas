@@ -1,0 +1,47 @@
+{
+  "nodes": [
+    {
+      "id": "node-1",
+      "x": 100,
+      "y": 100,
+      "width": 250,
+      "height": 100,
+      "type": "text",
+      "text": "# Welcome to SvelteFlow!\n\nDouble-click to edit this node"
+    },
+    {
+      "id": "node-2",
+      "x": 450,
+      "y": 100,
+      "width": 250,
+      "height": 80,
+      "type": "text",
+      "text": "SvelteFlow provides:\n- Pan & Zoom\n- MiniMap\n- Controls"
+    },
+    {
+      "id": "node-3",
+      "x": 275,
+      "y": 300,
+      "width": 250,
+      "height": 60,
+      "type": "text",
+      "text": "This is a proof-of-concept!"
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-1",
+      "fromNode": "node-1",
+      "fromSide": "right",
+      "toNode": "node-2",
+      "toSide": "left"
+    },
+    {
+      "id": "edge-2",
+      "fromNode": "node-1",
+      "fromSide": "bottom",
+      "toNode": "node-3",
+      "toSide": "top"
+    }
+  ]
+}
